@@ -2,6 +2,10 @@ library(tidyverse)
 library(readxl)
 
 possibleStimCodes <- read_excel('trigger stimulus coding.xlsx')$code %>% c(0)
+noiseCodes <- c(1,4,8)
+stimSequenceFolder <- './stim sequences/'
+stimSequenceFiles <- dir(stimSequenceFolder)
+stim.CodeColumn <- 5
 
 rawDataFolder <- './raw data/'
 rawDataFiles <- dir(rawDataFolder)
@@ -10,9 +14,28 @@ femg.ChannelNames <- c('A-ZYG Processed',
 stim.ChannelName <- 'Stimulus'
 baseline.time.sec <- 0.5
 
+IDformat <- '(s|p)[0-9]{3}'
+
+# main loop
 for (n in 1:length(rawDataFiles)) {
+  # current file
   raw.File <- paste0(rawDataFolder,rawDataFiles[n])
+  # print progress
   print( paste( n, 'of', length(rawDataFiles), ':', rawDataFiles[n]))
+  
+  # get the participant/session/file ID from the filename
+  ID <- str_extract(raw.File, IDformat)
+  
+  # matching stimulus sequence file
+  stim.File <- paste0(stimSequenceFolder,
+    stimSequenceFiles[str_detect(stimSequenceFiles, ID)])
+  
+  # read in stim file
+  stim.Seq <- read_tsv(stim.File, skip = 5, col_names = FALSE)[,stim.CodeColumn]
+  names(stim.Seq) <- 'X'
+  stim.Seq <- stim.Seq$X %>% 
+    as.numeric() %>% 
+    na.omit()
   
   # extract numbers from 2nd row to get sample duration in ms and convert to sampling rate
   sampRate.Hz <- read_lines(raw.File, skip = 1, n_max = 1) %>% 
@@ -40,7 +63,7 @@ for (n in 1:length(rawDataFiles)) {
   # rename the columns
   names(femg.data) <- c(stim.ChannelName, femg.ChannelNames)
   
-  # add time and transition variables
+  # add time and stim transition variables
   femg.data <- femg.data %>% 
     mutate(time.sec = seq(0,n()-1)/sampRate.Hz,
            transition = c(1,diff(Stimulus)) != 0 | c(diff(Stimulus),1) != 0,
