@@ -27,7 +27,7 @@ IDformat <- '(s|p)[0-9]{3}'
 
 # ---- for saving cleaned data ----
 stimColName <- 'StimCode'
-femgColNames <- c('Zyg','Cor')
+femgColNames <- c('Zyg.mV','Cor.mV')
 outputFolder <- './coded data/'
 
 
