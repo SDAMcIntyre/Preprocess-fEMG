@@ -66,7 +66,7 @@ denoise <- function(x, nsamples) {
   
 }
 
-clean_acq_stim_codes <- function(data, stimChannel, usedStimCodes, knownNoiseCodes) {
+clean_acq_stim_codes <- function(data, stimChannel, usedStimCodes, knownNoiseCodes, offCode = 0) {
   diff_from_prev <- function(x) c(TRUE, diff(x) != 0)
   diff_from_next <- function(x) c(diff(x) != 0, TRUE)
   
@@ -76,13 +76,46 @@ clean_acq_stim_codes <- function(data, stimChannel, usedStimCodes, knownNoiseCod
       Stim.flag.noise = denoise(.data[[stimChannel]], 100)$flagged,
       StimCode.corrected = denoise(.data[[stimChannel]], 100)$corrected,
       #set known noise codes to 0
-      StimCode.corrected = replace(StimCode.corrected, StimCode.corrected %in% knownNoiseCodes, 0),
+      StimCode.corrected = replace(StimCode.corrected, StimCode.corrected %in% knownNoiseCodes, stim.OffCode),
       # is the code different to the previous one? 
       transition.start = diff_from_prev(StimCode.corrected),
       transition.end = diff_from_next(StimCode.corrected),
       # is the stim code an unexpected one?
       unexpected = StimCode.corrected %in% usedStimCodes == FALSE
     )
+  
+  # get trial numbers from indices of transition points
+  newTrials <- c(0, with(stimCodedData, 
+                         which(transition.end & 
+                                 StimCode.corrected != offCode)))
+  
+  stimCodedData <- stimCodedData %>% mutate(trialNo = 0,
+                                            stimTime.sec = 0)
+  
+  # fill in all trial numbers 
+  for (n in seq_along(newTrials)[-length(newTrials)]) {
+    stimCodedData <- stimCodedData %>% 
+      mutate(trialNo = replace(trialNo, 
+                               (newTrials[n]+1):newTrials[n+1], 
+                               values = n))
+  
+    # time relative to stimulus onset
+    t.start <- with(stimCodedData,
+                    Time.sec[trialNo == n & 
+                               transition.start & 
+                               StimCode.corrected != offCode])
+    stimCodedData <- stimCodedData %>% 
+      mutate(stimTime.sec = replace(stimTime.sec,
+                                    trialNo == n,
+                                    Time.sec[trialNo == n] - t.start))
+  }
+  
+  # add phase info (pre-stim/stim)
+  stimCodedData <- stimCodedData %>% 
+    mutate(phase = ifelse(StimCode.corrected != offCode, 
+                 'stimulus', 'prestim'),
+           phase = replace(phase, trialNo == 0, NA))
+  
   return(stimCodedData)
 }
 

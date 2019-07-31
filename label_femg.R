@@ -11,13 +11,13 @@ stim.ChannelName <- 'Stimulus'
 
 
 # ---- for cleaning up stimulus codes ----
+stim.OffCode <- 0
 # read all stimulus codes used in the experiment from a file, add 0 to the list (for no stim)
-femg.stimCodes <- read_excel('trigger stimulus coding.xlsx')$code %>% c(0)
+femg.stimCodes <- read_excel('trigger stimulus coding.xlsx')$code %>% c(stim.OffCode)
 # alternatively you can just type the list of codes into a vector e.g. stimCodes <- c(0,1,2,3)
 
-# known noise codes to set to 0
+# known noise codes to set to stim off code
 femg.noiseCodes <- c(4)
-
 
 # ---- for checking the stim sequence against a file from Presentation ----
 stimSequenceFolder <- './stim sequences/'
@@ -43,10 +43,12 @@ for (n in 1:length(rawDataFiles)) {
                                  keepChannels = c(stim.ChannelName, femg.ChannelNames))
   
   # clean up the codes in the data file, add transition labels, and find any remaining unexpected codes
+  # add trial numbers and phase (prestim or stimulus)
   coded.femg.data <- clean_acq_stim_codes(data = raw.femg.data, 
                                         stimChannel = stim.ChannelName,
                                         usedStimCodes = femg.stimCodes,
-                                        knownNoiseCodes = femg.noiseCodes)
+                                        knownNoiseCodes = femg.noiseCodes,
+                                        offCode = stim.OffCode)
 
   # check for unexpected stim codes
   raw.unexpectedCodes <- unique(filter(coded.femg.data,unexpected)$StimCode.corrected)
@@ -86,9 +88,10 @@ for (n in 1:length(rawDataFiles)) {
   if (length(raw.unexpectedCodes) == 0 & comparison$synced) {
     out.femg.data <- coded.femg.data %>% 
       select(c('Time.sec',
+               'stimTime.sec',
                'StimCode.corrected',
-               'transition.start',
-               'transition.end',
+               'trialNo',
+               'phase',
                femg.ChannelNames))
     names(out.femg.data)[
       str_which(names(out.femg.data),
