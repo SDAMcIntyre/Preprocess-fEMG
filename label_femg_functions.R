@@ -89,25 +89,13 @@ clean_acq_stim_codes <- function(data, stimChannel, usedStimCodes, knownNoiseCod
                          which(transition.end & 
                                  StimCode.corrected != offCode)))
   
-  stimCodedData <- stimCodedData %>% mutate(trialNo = 0,
-                                            stimTime.sec = 0)
-  
   # fill in all trial numbers 
+  stimCodedData <- stimCodedData %>% mutate(trialNo = 0)
   for (n in seq_along(newTrials)[-length(newTrials)]) {
     stimCodedData <- stimCodedData %>% 
       mutate(trialNo = replace(trialNo, 
                                (newTrials[n]+1):newTrials[n+1], 
                                values = n))
-  
-    # time relative to stimulus onset
-    t.start <- with(stimCodedData,
-                    Time.sec[trialNo == n & 
-                               transition.start & 
-                               StimCode.corrected != offCode])
-    stimCodedData <- stimCodedData %>% 
-      mutate(stimTime.sec = replace(stimTime.sec,
-                                    trialNo == n,
-                                    Time.sec[trialNo == n] - t.start))
   }
   
   # add phase info (pre-stim/stim)
@@ -115,6 +103,11 @@ clean_acq_stim_codes <- function(data, stimChannel, usedStimCodes, knownNoiseCod
     mutate(phase = ifelse(StimCode.corrected != offCode, 
                  'stimulus', 'prestim'),
            phase = replace(phase, trialNo == 0, NA))
+  
+  # time relative to stimulus onset
+  stimCodedData <- stimCodedData %>%
+    group_by(trialNo) %>%
+    mutate(stimTime.sec = Time.sec - min(Time.sec[phase!='prestim']))
   
   return(stimCodedData)
 }

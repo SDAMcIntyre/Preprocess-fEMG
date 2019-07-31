@@ -9,7 +9,6 @@ femg.ChannelNames <- c('A-ZYG Processed',
                        'A-COR Processed')
 stim.ChannelName <- 'Stimulus'
 
-
 # ---- for cleaning up stimulus codes ----
 stim.OffCode <- 0
 # read all stimulus codes used in the experiment from a file, add 0 to the list (for no stim)
@@ -43,7 +42,7 @@ for (n in 1:length(rawDataFiles)) {
                                  keepChannels = c(stim.ChannelName, femg.ChannelNames))
   
   # clean up the codes in the data file, add transition labels, and find any remaining unexpected codes
-  # add trial numbers and phase (prestim or stimulus)
+  # add trial numbers and phase (prestim or stimulus) and stimulus relative time
   coded.femg.data <- clean_acq_stim_codes(data = raw.femg.data, 
                                         stimChannel = stim.ChannelName,
                                         usedStimCodes = femg.stimCodes,
