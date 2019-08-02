@@ -19,6 +19,35 @@ scale_and_flag <- function(data, prefixes, win.sec, flag.threshold) {
   return(data)
 }
 
+summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
+  output <- list()
+  for (v in seq_along(prefixes)) {
+    
+    name.flagged <- paste(prefixes[v], 'flagged', sep = '.')
+    
+    allFlaggedTrials <- data %>% 
+      filter(stimTime.sec >= -baseline.sec & .data[[name.flagged]]) %>% 
+      distinct(trialNo) %>% 
+      pull(trialNo) 
+
+    baselineOnlyFlaggedTrials <- data %>% 
+      filter(stimTime.sec >= 0 & .data[[name.flagged]]) %>% # get stim flagged trials
+      distinct(trialNo) %>% 
+      pull(trialNo) %>% 
+      setdiff(x = allFlaggedTrials) # compare to all flagged trials
+    
+    nTrials <- n_distinct(data$trialNo)
+    nFlaggedTrials <- length(allFlaggedTrials)
+    
+    output[[prefixes[v]]] <- list('allFlaggedTrials' = allFlaggedTrials,
+                                  'baselineOnlyFlaggedTrials' = baselineOnlyFlaggedTrials,
+                                  'nTrials' = nTrials,
+                                  'nFlaggedTrials' = nFlaggedTrials,
+                                  'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials)
+  }
+  return(output)
+}
+
 find_alternate_baseline <- function(data, flagVar, baseline.sec) {
   sample.duration <- diff(data$Time.sec[1:2])
   nSamples <- baseline.sec/sample.duration
