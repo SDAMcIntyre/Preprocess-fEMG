@@ -58,34 +58,41 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
                             'nFlaggedTrials' = nFlaggedTrials,
                             'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials,
                             'alt.baselines' = tibble(trialNo = baselineOnlyFlaggedTrials,
-                                                  new.bl.start = NA,
-                                                  new.bl.end = NA))
+                                                  alt.bl.start = NA,
+                                                  alt.bl.end = NA))
 
     # if there are any trials with flags only in the baseline
     if ( length(baselineOnlyFlaggedTrials) > 0 ) {
-     # try to find a better baseline for each of those
+      # try to find a better baseline for each of those
       for (baselineTrial in baselineOnlyFlaggedTrials) {
-        new.bl <- pp.femg.data %>% 
-          filter(trialNo == baselineTrial & stimTime.sec < 0) %>% 
+        new.bl <-data %>%
+          filter(trialNo == baselineTrial & stimTime.sec < 0) %>%
           find_alternate_baseline( flagVar = paste(varPF,'flagged', sep = '.'), baseline.sec )
         # save if it found some
         if (length(new.bl) > 0) {
-          output[[varPF]]$alt.baselines %>% 
-            mutate(new.bl.start = replace(new.bl.start, trialNo == baselineTrial, values = new.bl[1]),
-                   new.bl.end = replace(new.bl.end, trialNo == baselineTrial, values = new.bl[2])) }
-      } }
+          output[[varPF]]$alt.baselines <- output[[varPF]]$alt.baselines %>%
+            mutate(alt.bl.start = replace(alt.bl.start, trialNo == baselineTrial, values = new.bl[1]),
+                   alt.bl.end = replace(alt.bl.end, trialNo == baselineTrial, values = new.bl[2])) }
+      } 
+    }
+    
   
   }
   return(output)
 }
 
-plot_flagged_femg_trials <- function(data, y, flag, flag.win) {
+plot_flagged_femg_trials <- function(data, y, flag, flag.win, baseline) {
+  x.start <- min(data$stimTime.sec)
+  x.stop <- max(data$stimTime.sec)
   data %>% 
-    ggplot(aes(x = stimTime.sec,y = {{y}})) +
+    ggplot(aes(x = stimTime.sec,y = .data[[y]])) +
     geom_vline(xintercept = 0) +
-    geom_tile(data = filter(data, {{flag}}), fill = '#fed976', alpha = 0.1,
-              aes(x = stimTime.sec, y = {{y}}, width = flag.win, height = Inf ) ) +
+    geom_tile(data = filter(data, .data[[flag]]), fill = '#fed976', alpha = 0.1,
+              aes(x = stimTime.sec, y = .data[[y]], width = flag.win, height = Inf ) ) +
     facet_grid(trialNo ~ ., scales = 'free_y') +
-    geom_line(colour = '#2b8cbe', size = 1) 
+    geom_vline(xintercept = baseline, colour = '#41ab5d', size = 1) +
+    geom_line(colour = '#2b8cbe', size = 1) +
+    scale_x_continuous(breaks = function(x) seq(x.start, x.stop, by = win.sec*4),
+                       minor_breaks = function(x) seq(x.start, x.stop, by = win.sec))
 }
 
