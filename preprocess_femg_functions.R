@@ -75,8 +75,9 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
                    alt.bl.end = replace(alt.bl.end, trialNo == baselineTrial, values = new.bl[2])) }
       } 
     }
-    
-  
+    output[[varPF]]$excludeTrials <- setdiff(allFlaggedTrials, na.omit(output[[varPF]]$alt.baselines$trialNo))
+    output[[varPF]]$nExcludedTrials <- length(output[[varPF]]$excludeTrials)
+    output[[varPF]]$pcExcludedTrials <- 100*output[[varPF]]$nExcludedTrials/nTrials
   }
   return(output)
 }
