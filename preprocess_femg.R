@@ -14,6 +14,7 @@ stimulus.sec <- 1.0
 win.sec <- 0.05
 
 flag.threshold <- 3 # multiple of SD
+prefixes <- c('Zyg', 'Cor')
 
 # ---- MAIN LOOP ---- 
 
@@ -25,12 +26,7 @@ win.samples <- win.sec/diff(coded.femg.data$Time.sec[1:2])
 
 # z-score data and flag extreme values
 pp.femg.data <- coded.femg.data %>% 
-  mutate(Zyg.z = scale(Zyg.mV),
-         Cor.z = scale(Cor.mV),
-         Zyg.z.range = roll_range(Zyg.z, win.samples, fill = NA),
-         Cor.z.range = roll_range(Cor.z, win.samples, fill = NA),
-         flag.Zyg = abs(Zyg.z.range) > flag.threshold,
-         flag.Cor = abs(Cor.z.range) > flag.threshold) %>% 
+  scale_and_flag(prefixes, win.samples, flag.threshold) %>% 
   filter(trialNo > 0 & 
            stimTime.sec >= -prestim.sec &
            stimTime.sec < stimulus.sec) 
@@ -84,8 +80,7 @@ if (length(baseline.only > 0)) {
     plot_flagged_femg_trials(Zyg.mV, flag.Zyg, win.sec) +
     scale_x_continuous(breaks = function(x) seq(-prestim.sec, stimulus.sec, by = win.sec*4),
                        minor_breaks = function(x) seq(-prestim.sec, stimulus.sec, by = win.sec)) +
-    geom_vline(xintercept = c(new.bl.end - baseline.sec, new.bl.end)) +
-    geom_line(aes(y=Zyg.z.range), colour = 'grey') +geom_hline(yintercept = 3, colour = 'red')
+    geom_vline(xintercept = c(new.bl.end - baseline.sec, new.bl.end), colour = '#41ab5d', size = 1) 
 }
 
 # look at flagged cor trials
