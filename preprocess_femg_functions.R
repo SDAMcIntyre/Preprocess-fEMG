@@ -6,11 +6,11 @@ roll_range <- function(x, ...) roll_max(x, ...) - roll_min(x, ...)
 scale_and_flag <- function(data, prefixes, win.sec, flag.threshold) {
   sample.duration <- diff(data$Time.sec[1:2])
   nSamples <- win.sec/sample.duration
-  for (v in seq_along(prefixes)) {
-    rawVar <- names(data) %>% str_subset(prefixes[v])
-    name.z <- paste(prefixes[v],'z',sep = '.')
+  for (varPF in prefixes) {
+    rawVar <- names(data) %>% str_subset(varPF)
+    name.z <- paste(varPF,'z',sep = '.')
     name.z.range <- paste(name.z,'range', sep = '.')
-    name.flagged <- paste(prefixes[v], 'flagged', sep = '.')
+    name.flagged <- paste(varPF, 'flagged', sep = '.')
     data <- data %>% 
       mutate(!!name.z := scale(.data[[rawVar]]),
              !!name.z.range := roll_range(.data[[name.z]], nSamples, fill = NA),
@@ -21,9 +21,9 @@ scale_and_flag <- function(data, prefixes, win.sec, flag.threshold) {
 
 summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
   output <- list()
-  for (v in seq_along(prefixes)) {
+  for (varPF in prefixes) {
     
-    name.flagged <- paste(prefixes[v], 'flagged', sep = '.')
+    name.flagged <- paste(varPF, 'flagged', sep = '.')
     
     allFlaggedTrials <- data %>% 
       filter(stimTime.sec >= -baseline.sec & .data[[name.flagged]]) %>% 
@@ -39,7 +39,7 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
     nTrials <- n_distinct(data$trialNo)
     nFlaggedTrials <- length(allFlaggedTrials)
     
-    output[[prefixes[v]]] <- list('allFlaggedTrials' = allFlaggedTrials,
+    output[[varPF]] <- list('allFlaggedTrials' = allFlaggedTrials,
                                   'baselineOnlyFlaggedTrials' = baselineOnlyFlaggedTrials,
                                   'nTrials' = nTrials,
                                   'nFlaggedTrials' = nFlaggedTrials,
@@ -56,7 +56,7 @@ find_alternate_baseline <- function(data, flagVar, baseline.sec) {
     filter(possible.new.bl) %>% 
     pull(stimTime.sec) %>% 
     max() -> new.bl.end
-  if (length(new.bl.end) == 0) return(NULL) else
+  if (length(new.bl.end) == 0) return(new.bl.end) else
     return(c(new.bl.end - baseline.sec, new.bl.end))
 }
 
