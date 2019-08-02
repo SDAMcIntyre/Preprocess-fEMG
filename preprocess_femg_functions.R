@@ -19,6 +19,19 @@ scale_and_flag <- function(data, prefixes, win.sec, flag.threshold) {
   return(data)
 }
 
+find_alternate_baseline <- function(data, flagVar, baseline.sec) {
+  # find an alternate baseline from a single trial
+  sample.duration <- diff(data$Time.sec[1:2])
+  nSamples <- baseline.sec/sample.duration
+  data %>% 
+    mutate(possible.new.bl = roll_maxr(.data[[flagVar]], nSamples, fill = NA) == 0) %>% 
+    filter(possible.new.bl) %>% 
+    pull(stimTime.sec) %>% 
+    max() -> new.bl.end
+  if (length(new.bl.end) == 0) return(new.bl.end) else
+    return(c(new.bl.end - baseline.sec, new.bl.end))
+}
+
 summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
   output <- list()
   for (varPF in prefixes) {
@@ -40,24 +53,30 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
     nFlaggedTrials <- length(allFlaggedTrials)
     
     output[[varPF]] <- list('allFlaggedTrials' = allFlaggedTrials,
-                                  'baselineOnlyFlaggedTrials' = baselineOnlyFlaggedTrials,
-                                  'nTrials' = nTrials,
-                                  'nFlaggedTrials' = nFlaggedTrials,
-                                  'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials)
+                            'baselineOnlyFlaggedTrials' = baselineOnlyFlaggedTrials,
+                            'nTrials' = nTrials,
+                            'nFlaggedTrials' = nFlaggedTrials,
+                            'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials,
+                            'alt.baselines' = tibble(trialNo = baselineOnlyFlaggedTrials,
+                                                  new.bl.start = NA,
+                                                  new.bl.end = NA))
+
+    # if there are any trials with flags only in the baseline
+    if ( length(baselineOnlyFlaggedTrials) > 0 ) {
+     # try to find a better baseline for each of those
+      for (baselineTrial in baselineOnlyFlaggedTrials) {
+        new.bl <- pp.femg.data %>% 
+          filter(trialNo == baselineTrial & stimTime.sec < 0) %>% 
+          find_alternate_baseline( flagVar = paste(varPF,'flagged', sep = '.'), baseline.sec )
+        # save if it found some
+        if (length(new.bl) > 0) {
+          output[[varPF]]$alt.baselines %>% 
+            mutate(new.bl.start = replace(new.bl.start, trialNo == baselineTrial, values = new.bl[1]),
+                   new.bl.end = replace(new.bl.end, trialNo == baselineTrial, values = new.bl[2])) }
+      } }
+  
   }
   return(output)
-}
-
-find_alternate_baseline <- function(data, flagVar, baseline.sec) {
-  sample.duration <- diff(data$Time.sec[1:2])
-  nSamples <- baseline.sec/sample.duration
-  data %>% 
-    mutate(possible.new.bl = roll_maxr(.data[[flagVar]], nSamples, fill = NA) == 0) %>% 
-    filter(possible.new.bl) %>% 
-    pull(stimTime.sec) %>% 
-    max() -> new.bl.end
-  if (length(new.bl.end) == 0) return(new.bl.end) else
-    return(c(new.bl.end - baseline.sec, new.bl.end))
 }
 
 plot_flagged_femg_trials <- function(data, y, flag, flag.win) {
