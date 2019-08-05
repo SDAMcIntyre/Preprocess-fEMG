@@ -52,14 +52,15 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
     nTrials <- n_distinct(data$trialNo)
     nFlaggedTrials <- length(allFlaggedTrials)
     
+    alt.baselines = tibble(trialNo = baselineOnlyFlaggedTrials,
+                             alt.bl.start = NA,
+                             alt.bl.end = NA)
+    
     output[[varPF]] <- list('allFlaggedTrials' = allFlaggedTrials,
                             'baselineOnlyFlaggedTrials' = baselineOnlyFlaggedTrials,
                             'nTrials' = nTrials,
                             'nFlaggedTrials' = nFlaggedTrials,
-                            'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials,
-                            'alt.baselines' = tibble(trialNo = baselineOnlyFlaggedTrials,
-                                                  alt.bl.start = NA,
-                                                  alt.bl.end = NA))
+                            'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials)
 
     # if there are any trials with flags only in the baseline
     if ( length(baselineOnlyFlaggedTrials) > 0 ) {
@@ -70,14 +71,24 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
           find_alternate_baseline( flagVar = paste(varPF,'flagged', sep = '.'), baseline.sec )
         # save if it found some
         if (length(new.bl) > 0) {
-          output[[varPF]]$alt.baselines <- output[[varPF]]$alt.baselines %>%
+          alt.baselines <- alt.baselines %>%
             mutate(alt.bl.start = replace(alt.bl.start, trialNo == baselineTrial, values = new.bl[1]),
                    alt.bl.end = replace(alt.bl.end, trialNo == baselineTrial, values = new.bl[2])) }
       } 
     }
-    output[[varPF]]$excludeTrials <- setdiff(allFlaggedTrials, na.omit(output[[varPF]]$alt.baselines$trialNo))
-    output[[varPF]]$nExcludedTrials <- length(output[[varPF]]$excludeTrials)
-    output[[varPF]]$pcExcludedTrials <- 100*output[[varPF]]$nExcludedTrials/nTrials
+    
+    baselineRescuedTrials <- na.omit(alt.baselines$trialNo) %>% unlist()
+    nRescuedTrials <- length(baselineRescuedTrials)
+    excludeTrials <- setdiff(allFlaggedTrials, baselineRescuedTrials)
+    nExcludedTrials <- length(excludeTrials)
+    pcExcludedTrials <- 100*nExcludedTrials/nTrials
+    output[[varPF]]<- output[[varPF]] %>% 
+      c(list('alt.baselines' = alt.baselines,
+             'baselineRescuedTrials' = baselineRescuedTrials,
+             'nRescuedTrials' = nRescuedTrials,
+             'excludeTrials' = excludeTrials,
+             'nExcludedTrials' = nExcludedTrials,
+             'pcExcludedTrials' = pcExcludedTrials))
   }
   return(output)
 }
@@ -97,3 +108,18 @@ plot_flagged_femg_trials <- function(data, y, flag, flag.win, baseline) {
                        minor_breaks = function(x) seq(x.start, x.stop, by = win.sec))
 }
 
+label_baseline_periods <- function(data, prefixes, trials, default.bl) {
+  for (varPF in prefixes) {
+    name.bl.start <- paste(varPF,'bl.start', sep = '.')
+    name.bl.end <- paste(varPF,'bl.end', sep = '.')
+    data <- data %>% mutate(!!name.bl.start:= default.bl[1],
+                    !!name.bl.end:= default.bl[2])
+    for (b in trials[[varPF]]$baselineRescuedTrials) {
+      alt.bl <- trials[[varPF]]$alt.baselines %>% filter(trialNo == b) %>% unlist()
+      data <- data %>% 
+        mutate(!!name.bl.start:= replace(.data[[name.bl.start]], b == trialNo, alt.bl[2]),
+               !!name.bl.end:= replace(.data[[name.bl.end]], b == trialNo, alt.bl[3]))
+    }
+  }
+  data
+}
