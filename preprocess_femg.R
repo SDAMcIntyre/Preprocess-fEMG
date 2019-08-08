@@ -21,6 +21,13 @@ flag.threshold <- 3 # multiple of SD
 prefixes <- c('Zyg', 'Cor')
 rawVariables <- c('Zyg.mV', 'Cor.mV')
 
+dataset.summary <- list()
+for (varPF in prefixes) {
+  dataset.summary[[varPF]] <- tibble(sourceFile = codedDataFiles,
+                                     nExcludedTrials = rep_along(codedDataFiles,0),
+                                     pcExcludedTrials = rep_along(codedDataFiles,0))
+}
+
 # ---- MAIN LOOP ---- 
 
 for (n in seq_along(codedDataFiles)) {
@@ -42,30 +49,30 @@ for (n in seq_along(codedDataFiles)) {
   ID <- str_extract(codedDataFiles[n], IDformat)
   for (varPF in prefixes) {
     if (trials[[varPF]]$nFlaggedTrials > 0) {
-      
+
       for (thisTrial in trials[[varPF]]$allFlaggedTrials) {
-        thisBaseline <- trials[[varPF]]$alt.baselines %>% 
+        thisBaseline <- trials[[varPF]]$alt.baselines %>%
           filter(trialNo == thisTrial) %>% select(2:3) %>% unlist() %>% na.omit()
         if (length(thisBaseline) > 0) { note <- 'flagged_bl'} else {
           note <- 'flagged'
         }
-        
+
         windows(15,2)
-        flagged.femg.data %>% 
-          filter(stimTime.sec >= -prestim.sec & 
+        flagged.femg.data %>%
+          filter(stimTime.sec >= -prestim.sec &
                    trialNo %in% thisTrial) %>%
-          plot_flagged_femg_trials(y = str_subset(rawVariables,varPF), 
+          plot_flagged_femg_trials(y = str_subset(rawVariables,varPF),
                                    flag = paste(varPF, 'flagged', sep = '.'), win.sec,
                                    baseline = thisBaseline) +
           labs(title = paste(ID, varPF), x = 'Time (seconds)', y = str_subset(rawVariables,varPF))
-        ggsave(paste0('./FOR INSPECTION/',ID,'_',thisTrial,'_',varPF,'_',note,'.png')) 
+        ggsave(paste0('./FOR INSPECTION/',ID,'_',thisTrial,'_',varPF,'_',note,'.png'))
         dev.off()
-        tibble(code = thisTrial, variable = varPF, note = note, from = codedDataFiles[n]) %>% 
+        tibble(code = thisTrial, variable = varPF, note = note, from = codedDataFiles[n]) %>%
           write_csv(paste0('./FOR INSPECTION/flagged_trials.csv'), append = TRUE)
       }
     }
   }
-  
+
   # select baseline period and save
   default.bl <- c(-baseline.sec, 0 - diff(flagged.femg.data$Time.sec[1:2])) # 1 sample before 0
   flagged.femg.data <- flagged.femg.data %>% 
@@ -115,42 +122,14 @@ for (n in seq_along(codedDataFiles)) {
     summary.femg.data[[varPF]] %>% 
       write_tsv(paste0(summaryFolder,ID,'_',varPF,'_mean.txt'))
     
+    dataset.summary[[varPF]]$nExcludedTrials[n] = trials[[varPF]]$nExcludedTrials
+    dataset.summary[[varPF]]$pcExcludedTrials[n] = trials[[varPF]]$pcExcludedTrials
+    
   }
   
-  
-  Zyg.summary <- Zyg %>% 
-    group_by(trialNo, StimCode, phase) %>% 
-    summarise(Zyg.z.mean = mean(Zyg.z)) %>% 
-    group_by(trialNo) %>% 
-    summarise(StimCode = StimCode[2],
-              Zyg.z.mean.baseline = Zyg.z.mean[1],
-              Zyg.z.mean.stimulus = Zyg.z.mean[2],
-              Zyg.z.mean.difference = diff(Zyg.z.mean))
-  
-  write_tsv(Zyg.summary, paste0(summaryFolder,ID,'_Zyg_mean.txt'))
-  
-  Cor.cols <- str_which(names(pp.femg.data),'Cor')
-  Cor <- pp.femg.data %>% 
-    select(c(1:5, Cor.cols)) %>% 
-    group_by(trialNo) %>% 
-    mutate(phase = replace(phase, 
-                           stimTime.sec >= Cor.bl.start & stimTime.sec <= Cor.bl.end, # boundaries wrong
-                           'baseline'),
-           Cor.z = replace(Cor.z,
-                           trialNo %in% trials$Cor$excludeTrials,
-                           NA)) %>% 
-    filter( phase != 'prestim') 
-  write_csv(Cor, paste0(outputFolder,ID,'_Cor_preprocessed.csv'), append = TRUE)
-  
-  
-  Cor.summary <- Cor %>% 
-    group_by(trialNo, StimCode, phase) %>% 
-    summarise(Cor.z.mean = mean(Cor.z)) %>% 
-    group_by(trialNo) %>% 
-    summarise(StimCode = StimCode[2],
-              Cor.z.mean.baseline = Cor.z.mean[1],
-              Cor.z.mean.stimulus = Cor.z.mean[2],
-              Cor.z.mean.difference = diff(Cor.z.mean))
-  
-  write_tsv(Cor.summary, paste0(summaryFolder,ID,'_Cor_mean.txt'))
+}
+
+for (varPF in prefixes) {
+  dataset.summary[[varPF]] %>% 
+    write_csv(paste0(varPF,'_excluded_summary.csv'))
 }
