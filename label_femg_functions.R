@@ -1,5 +1,6 @@
 library(tidyverse)
 library(readxl)
+library(RcppRoll)
 
 read_acq_text <- function(fileName, keepChannels) {
 
@@ -21,6 +22,17 @@ read_acq_text <- function(fileName, keepChannels) {
   raw.ChannelNames <- read_lines(fileName,
                                  skip = 3, n_max = 2*raw.nChannels)[seq(1,raw.nChannels*2, 2)]
   
+  # all channels
+  # rawAcqData <- read_csv(fileName,
+  #                        skip = raw.nChannels*2+5, col_names = FALSE)[,1:raw.nChannels]
+  # names(rawAcqData) <- paste(raw.ChannelNames, seq_along(raw.ChannelNames), sep = '.')
+  # rawAcqData$time <- seq_along(rawAcqData[,1])
+  # rawAcq <- gather(rawAcqData, key = 'channel', value = 'value', -time)
+  # windows()
+  # ggplot(rawAcq) + 
+  #   geom_line(aes(x = time, y = value )) +
+  #   facet_grid(channel~., scale = 'free_y')
+  
   # get the column numbers for the data and stimulus channels by matching the names
   keepColumns <- raw.ChannelNames %>% 
     str_which(paste(keepChannels, collapse = '|'))
@@ -29,21 +41,24 @@ read_acq_text <- function(fileName, keepChannels) {
   rawAcqData <- read_csv(fileName,
                            skip = raw.nChannels*2+5, col_names = FALSE)[,keepColumns]
   # put the names back
-  names(rawAcqData) <- c(keepChannels)
+  names(rawAcqData) <- raw.ChannelNames[keepColumns]
   
   # add time variable
   rawAcqData <- rawAcqData %>% 
     mutate(Time.sec = seq(0,n()-1)/sampRate.Hz)
   
+  rawAcqData %>% 
+    gather(key = 'channel', value = 'value', -Time.sec) %>% 
+    ggplot() + 
+    geom_line(aes(x = Time.sec, y = value )) +
+    facet_grid(channel~., scale = 'free_y')
+  
   return(rawAcqData)
 }
 
 
-library(RcppRoll)
-
 denoise <- function(x, nsamples) {
   flagged <- rep_along(x,FALSE)
-  corrected <- x
   # look forwards
   last.window.median <- median(x[(length(x)-nsamples):length(x)])
   next.n.med <- roll_medianl(x, nsamples, fill = last.window.median)
@@ -53,13 +68,14 @@ denoise <- function(x, nsamples) {
   # look backwards
   first.window.median <- median(x[1:nsamples])
   last.n.med <- roll_medianr(x, nsamples, fill = first.window.median)
-  #shoft it one forwards so it doesn't include itself
+  #shift it one forwards so it doesn't include itself
   last.n.med <- c(last.n.med[1], last.n.med[-length(last.n.med)])
   
   # check if it's both different from the median of the previous n samples and 
   #from the median of the next n samples
   flagged <- x != last.n.med & x != next.n.med
 
+  corrected <- x
   corrected[flagged] <- next.n.med[flagged]
   
   return(list('flagged' = flagged, 'corrected' = corrected))
