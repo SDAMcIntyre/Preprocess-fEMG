@@ -4,16 +4,16 @@ library(RcppRoll)
 roll_range <- function(x, ...) roll_max(x, ...) - roll_min(x, ...)
 
 scale_and_flag <- function(data, prefixes, win.sec, flag.threshold) {
-  sample.duration <- diff(data$Time.sec[1:2])
+  sample.duration <- diff(data$stimTime.sec[1:2])
   nSamples <- win.sec/sample.duration
   for (varPF in prefixes) {
     rawVar <- names(data) %>% str_subset(varPF)
-    name.z <- paste(varPF,'z',sep = '.')
-    name.z.range <- paste(name.z,'range', sep = '.')
-    name.flagged <- paste(varPF, 'flagged', sep = '.')
+    name.z <- paste0(varPF,'.z')
+    name.z.range <- paste0(name.z,'.range')
+    name.flagged <- paste0(varPF, '.flagged')
     data <- data %>% 
       mutate(!!name.z := scale(.data[[rawVar]]),
-             !!name.z.range := roll_range(.data[[name.z]], nSamples, fill = NA),
+             !!name.z.range := roll_range(.data[[name.z]], n = nSamples, fill = NA),
              !!name.flagged := abs(.data[[name.z.range]]) > flag.threshold)
   }
   return(data)
@@ -36,7 +36,7 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
   output <- list()
   for (varPF in prefixes) {
     
-    name.flagged <- paste(varPF, 'flagged', sep = '.')
+    name.flagged <- paste0(varPF, '.flagged')
     
     allFlaggedTrials <- data %>% 
       filter(stimTime.sec >= -baseline.sec & .data[[name.flagged]]) %>% 
@@ -62,8 +62,8 @@ summarise_flagged_trials <- function(data, prefixes, baseline.sec) {
                             'nFlaggedTrials' = nFlaggedTrials,
                             'pcFlaggedTrials' = 100*nFlaggedTrials/nTrials)
 
-    # if there are any trials with flags only in the baseline
-    if ( length(baselineOnlyFlaggedTrials) > 0 ) {
+    # if there are any trials with flags only in the baseline and there is more pre-stim data
+    if ( length(baselineOnlyFlaggedTrials) > 0 & min(data$stimTime.sec < -2*baseline.sec) ) {
       # try to find a better baseline for each of those
       for (baselineTrial in baselineOnlyFlaggedTrials) {
         new.bl <-data %>%
