@@ -155,6 +155,7 @@ compare_stim_face_emoji_expt <- function(femgData, stimFile) {
     summarise(start = min(Time.sec))
   
   femg.Start <- femgData %>% 
+    ungroup() %>% 
     filter(transition.start & StimCode.corrected > 0) %>% 
     summarise(start = min(Time.sec))
   
