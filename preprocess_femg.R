@@ -33,6 +33,7 @@ for (varPF in prefixes) {
 for (n in seq_along(codedDataFiles)) {
   coded.data.file <- paste0(codedDataFolder,codedDataFiles[n])
   coded.femg.data <- read_csv(coded.data.file)
+  ID <- str_extract(codedDataFiles[n], IDformat)
   
   # z-score data and flag extreme transitions
   flagged.femg.data <- coded.femg.data %>% 
@@ -46,7 +47,6 @@ for (n in seq_along(codedDataFiles)) {
   glimpse(trials)
   
   # save the flagged trials for inspection
-  ID <- str_extract(codedDataFiles[n], IDformat)
   for (varPF in prefixes) {
     if (trials[[varPF]]$nFlaggedTrials > 0) {
 
@@ -110,6 +110,7 @@ for (n in seq_along(codedDataFiles)) {
     name.z.mean.baseline <- paste0(varPF,'.z.mean.baseline')
     name.z.mean.stimulus <- paste0(varPF,'.z.mean.stimulus')
     name.z.mean.difference <- paste0(varPF,'.z.mean.difference')
+    
     summary.femg.data[[varPF]] <- pp.femg.data[[varPF]] %>% 
       group_by(trialNo, StimCode, phase) %>% 
       summarise(name.z.mean = mean(name.z)) %>% 
@@ -117,8 +118,9 @@ for (n in seq_along(codedDataFiles)) {
       summarise(StimCode = StimCode[2],
                 name.z.mean.baseline = name.z.mean[1],
                 name.z.mean.stimulus = name.z.mean[2],
-                name.z.mean.difference = diff(name.z.mean))
-    
+                # name.z.mean.difference = diff(name.z.mean))
+                name.z.mean.difference = name.z.mean.stimulus - name.z.mean.baseline)
+
     summary.femg.data[[varPF]] %>% 
       write_tsv(paste0(summaryFolder,ID,'_',varPF,'_mean.txt'))
     
@@ -133,3 +135,7 @@ for (varPF in prefixes) {
   dataset.summary[[varPF]] %>% 
     write_csv(paste0(varPF,'_excluded_summary.csv'))
 }
+View(dataset.summary$Zyg)
+View(dataset.summary$Cor)
+print(mean(dataset.summary$Zyg$pcExcludedTrials))
+print(mean(dataset.summary$Cor$pcExcludedTrials))
