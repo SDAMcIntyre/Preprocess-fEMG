@@ -1,6 +1,7 @@
 library(tidyverse)
 library(readxl)
 library(RcppRoll)
+library(htmlwidgets)
 
 read_acq_text <- function(fileName, keepChannels) {
   print(paste('Reading file', fileName))
@@ -164,22 +165,31 @@ compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, sti
     .[[stimChannel]]
   
   # is the sequence in the femg data file the same as in the stim data file?
-  synced <- sum(abs(stimData$StimCode - femg.Seq)) == 0
+  synced <- length(stimData$StimCode) == length(femg.Seq)
+  if (synced) synced <- sum(abs(stimData$StimCode - femg.Seq)) == 0
   
-  # does the timing of the start of the stimulus match?
+  output <- list('stimSeqData' = stimAligned, 
+                 'synced' = synced)
+  
+  # onsets for all stimuli in femg file
   femg.Start <- femgData %>% 
     filter(transition.start & .[[stimChannel]] != offCode) %>% 
     pull(Time.sec)
-  
-  startOffsets <- stimAligned$Start.sec - femg.Start
-  
-  # does the timing of the end of the stimulus match?
 
+  # offsets for all stimuli in femg file
   femg.End <- femgData %>% 
     filter(transition.end & .[[stimChannel]] != offCode) %>% 
     pull(Time.sec) 
   
-  endOffsets <- stimAligned$End.sec - femg.End 
+  if (synced) {
+    # does the timing of the start of the stimulus match?
+    startOffsets <- stimAligned$Start.sec - femg.Start
+    output$startOffsets <- startOffsets
+      
+    # does the timing of the end of the stimulus match?
+    endOffsets <- stimAligned$End.sec - femg.End 
+    output$endOffsets <- endOffsets
+  }
   
   comparisonPlot <- ggplot() +
     geom_path(data = filter(femgData, transition.start | transition.end),
@@ -198,13 +208,9 @@ compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, sti
                colour = 'blue', shape = 4) +
     labs(title = 'Black: stim codes in femg file; Blue: stim codes in stim file', y = stimChannel)
   
-  output <- list('stimSeqData' = stimAligned, 
-                 'synced' = synced, 
-                 'startOffsets' = startOffsets, 
-                 'endOffsets' = endOffsets, 
-                 'comparisonPlot' = comparisonPlot)
+  output$comparisonPlot <- comparisonPlot
 
-    if (fillStimCodes) {
+  if (fillStimCodes) {
     stimFilledData <- femgData %>% mutate(StimCode.filled = .[[stimChannel]])
     for (n in seq_along(stimAligned$StimCode)) {
       tofill <- which(
@@ -254,6 +260,18 @@ compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, sti
   
   return(output)
   
+}
+
+saveWidgetFix <- function (widget,file,...) {
+  ## A wrapper to saveWidget which compensates for arguable BUG in
+  ## saveWidget which requires `file` to be in current working
+  ## directory.
+  wd<-getwd()
+  on.exit(setwd(wd))
+  outDir<-dirname(file)
+  file<-basename(file)
+  setwd(outDir);
+  saveWidget(widget,file=file,...)
 }
 
 label_femg_data <- function(femgData, stimChannel, offCode) {

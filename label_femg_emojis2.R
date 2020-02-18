@@ -13,7 +13,7 @@ stim.OffCode <- 0
 # read all stimulus codes used in the experiment from a file, add 0 to the list (for no stim)
 femg.stimCodes <- read_excel('trigger stimulus coding.xlsx')$code %>% c(stim.OffCode)
 # known noise codes to set to stim off code
-femg.noiseCodes <- c(1,4)
+femg.noiseCodes <- c(1,4,254)
 
 stimSequenceFolder <- './stim sequences emojis 2/'
 stimSequenceFiles <- dir(stimSequenceFolder)
@@ -32,12 +32,18 @@ for (n in 1:length(rawDataFiles)) {
   # print progress
   print( paste( n, 'of', length(rawDataFiles), ':', rawDataFiles[n]))
   
+  ID <- str_extract(raw.femg.file, IDformat)
+  
   # does this file need the stimcodes to be filled (IDs with numbers higher than 3)?
-  fillStimCodes <- str_extract(raw.femg.file, IDformat) %>% parse_number() > 3
+  fillStimCodes <- ID %>% parse_number() > 3
   
   # read in the raw text file from acqKnowledge
   raw.femg.data <- read_acq_text(fileName = raw.femg.file, 
                                  keepChannels = c(stim.ChannelName, femg.ChannelNames))
+  
+  if (ID == '003') {
+    raw.femg.data <- raw.femg.data %>% filter(Time.sec > 57.745)
+  }
 
   # clean up the codes in the data file, add transition labels, and find any remaining unexpected codes
   coded.femg.data <- clean_acq_stim_codes(femgData = raw.femg.data, 
@@ -57,9 +63,9 @@ for (n in 1:length(rawDataFiles)) {
   if (length(corrected.unexpectedCodes) > 0 | length(corrected.expectedCodes) < 2) {
     # plot the stimulus sequence
     codely <- coded.femg.data %>% 
-      plot_stim_code_sequence('StimCode.corrected')
-    inspectplot <- paste0('./FOR INSPECTION/',ID,'_unexpected_codes.html')
-    htmlwidgets::saveWidget(codely, inspectplot)
+      plot_stim_code_sequence('StimCode.corrected') %>% ggplotly()
+    inspectplot <- paste0('./FOR INSPECTION/',ID,'_unexpected_codes.html') 
+    saveWidgetFix(codely, inspectplot)
     inspectfile <- paste0('./FOR INSPECTION/unexpected_codes.csv')
     tibble(code = corrected.unexpectedCodes, from = raw.femg.file) %>% 
       write_csv(inspectfile, append = TRUE)
@@ -70,8 +76,7 @@ for (n in 1:length(rawDataFiles)) {
   }
   
   # check against Presentation stim sequence
-  # get ID to match acqKnowledge and Presentation files
-  ID <- str_extract(raw.femg.file, IDformat)
+  
   # corresponding stimulus sequence file
   stim.File <- paste0(stimSequenceFolder,
                       stimSequenceFiles[str_detect(stimSequenceFiles, ID)])
@@ -87,15 +92,15 @@ for (n in 1:length(rawDataFiles)) {
     # plot the two sequences
     comply <- ggplotly(comparison$comparisonPlot)
     inspect <- paste0('./FOR INSPECTION/',ID,'_unsynced.html')
-    htmlwidgets::saveWidget(comply, inspect)
+    saveWidgetFix(comply, inspect)
     warning(paste(
       'Stimulus codes in', raw.femg.file, 'and', stim.File, 'are not synced.\n',
       'See', inspect, 'for more details.'
     ))
+  } else {
+    print('Stimulus start offsets (seconds):'); print(summary(comparison$startOffsets))
+    print('Stimulus end offsets (seconds):'); print(summary(comparison$endOffsets))
   }
-  
-  print('Stimulus start offsets (seconds):'); print(summary(comparison$startOffsets))
-  print('Stimulus end offsets (seconds):'); print(summary(comparison$endOffsets))
   
   if (fillStimCodes) {
     coded.data <- comparison$stimFilledData
@@ -134,6 +139,7 @@ for (n in 1:length(rawDataFiles)) {
     out.femg.data %>% 
       write_csv(paste0(outputFolder,ID,'_labelled.csv'))
     print(paste0('Saving data: ', outputFolder,ID,'_labelled.csv'))
+    print('')
   }
 }
 
