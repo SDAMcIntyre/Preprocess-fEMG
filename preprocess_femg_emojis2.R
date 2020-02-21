@@ -36,8 +36,27 @@ for (n in seq_along(codedDataFiles)) {
   ID <- str_extract(codedDataFiles[n], IDformat)
   
   # z-score data and flag extreme transitions
-  flagged.femg.data <- coded.femg.data %>% 
-    scale_and_flag(prefixes, win.sec, flag.threshold) %>% 
+  flagged.femg.data.all <- coded.femg.data %>% 
+    scale_and_flag(prefixes, win.sec, flag.threshold) 
+  
+  histData <- flagged.femg.data.all %>%
+    pivot_longer( cols = matches( to_regex(prefixes) ),
+                  names_to = c('muscle','.value'), 
+                  names_pattern = '(.{3})\\.(.*)') %>% 
+    mutate(muscle = factor(muscle, levels = prefixes),
+           zstep = cut(abs(z), breaks = c(0:3,Inf), labels = c('>0','>1','>2','>3'), right = FALSE))
+  
+  h <- histData %>% 
+    ggplot(aes(x = mV)) +
+    facet_wrap(muscle~., scales = 'free', ncol = 1) +
+    geom_histogram(aes(fill = zstep), binwidth = 0.05, colour = 'grey') +
+    scale_x_continuous(trans = 'log1p') +
+    scale_fill_brewer(direction = -1) +
+    theme_bw() +
+    labs(title = ID, fill = 'z-score')
+  ggsave(paste0('./histograms/',ID,'.png'), h, width = 7, height = 6)
+  
+  flagged.femg.data <- flagged.femg.data.all %>% 
     filter(trialNo > 0 & 
              stimTime.sec >= -prestim.sec &
              stimTime.sec < stimulus.sec) 
