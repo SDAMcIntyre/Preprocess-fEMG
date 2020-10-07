@@ -11,3 +11,5 @@ In the "Save as type" drop-down, choose "Text (*.txt *.csv)"
 In the export options, tick "Include header" and choose "Delimiter: comma"
 
 ![Export options](documentation/Readme2_ExportOptions.png?raw=true)
+
+Wait for it to export, and place the file in the raw data folder.

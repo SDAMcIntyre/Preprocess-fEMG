@@ -87,7 +87,7 @@ denoise <- function(x, nsamples = 'auto', ignoreValues = c(0)) {
   
 }
 
-clean_acq_stim_codes <- function(femgData, stimChannel, usedStimCodes, knownNoiseCodes, offCode = 0, nsamples = 'auto') {
+clean_acq_stim_codes <- function(femgData, stimChannel, usedStimCodes, knownNoiseCodes = c(), offCode = 0, nsamples = 'auto') {
 
   denoised <- denoise(femgData[[stimChannel]], nsamples = nsamples, 
                       ignoreValues = c(offCode, knownNoiseCodes))
