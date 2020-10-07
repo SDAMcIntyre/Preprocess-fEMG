@@ -246,9 +246,9 @@ compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, sti
         )
       stimFilledData[tofill,'StimCode.filled'] <- stimAligned$StimCode[n]
     }
-    
-    stimFilledData <- stimFilledData %>% 
-      add_transitions(StimCode.filled)
+
+      stimFilledData <- stimFilledData %>% 
+      add_transitions('StimCode.filled')
     
     filledPlot <- ggplot() +
       geom_path(data = filter(stimFilledData, transition.start | transition.end),
