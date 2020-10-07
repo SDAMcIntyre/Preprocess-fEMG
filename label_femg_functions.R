@@ -46,6 +46,15 @@ read_acq_text <- function(fileName, keepChannels) {
 diff_from_prev <- function(x) { c(TRUE, diff(x) != 0) }
 diff_from_next <- function(x) { c(diff(x) != 0, TRUE) }
 
+add_transitions <- function(femgData, stimChannel) {
+  femgData %>%
+    ungroup() %>% 
+    mutate(
+      transition.start = diff_from_prev(.[[stimChannel]]),
+      transition.end = diff_from_next(.[[stimChannel]])
+    )
+}
+
 denoise <- function(x, nsamples = 'auto', ignoreValues = c(0)) {
   if (nsamples == 'auto') {
     # look at the data to find out how long the stimulus signal is
@@ -99,7 +108,7 @@ clean_acq_stim_codes <- function(femgData, stimChannel, usedStimCodes, knownNois
       #set known noise codes to 0
       StimCode.corrected = replace(StimCode.corrected, # values to replace
                                    StimCode.corrected %in% knownNoiseCodes, # condition
-                                   stim.OffCode), # replace with
+                                   offCode), # replace with
       # is the stim code an unexpected one?
       unexpected = StimCode.corrected %in% usedStimCodes == FALSE
     )
@@ -110,9 +119,7 @@ plot_stim_code_sequence <- function(femgData, stimChannel) {
   unexpectedCodes <- femgData %>% filter(unexpected) %>% 
     .[[stimChannel]] %>% unique()
   femgData %>%
-    mutate(transition.start = diff_from_prev(.[[stimChannel]]),
-           transition.end = diff_from_next(.[[stimChannel]])
-           ) %>%
+    add_transitions(stimChannel) %>%
     filter(transition.start | transition.end) %>% 
     ggplot(aes(Time.sec, .data[[stimChannel]])) +
     geom_path() +
@@ -123,6 +130,28 @@ plot_stim_code_sequence <- function(femgData, stimChannel) {
          x = 'Time (sec)') 
 }
 
+
+fill_stim_codes <- function(femgData, stimChannel, stimDuration) {
+  
+  starts <- femgData %>% 
+    add_transitions(stimChannel) %>% 
+    filter(transition.start & .[[stimChannel]] != 0) %>% 
+    select(c('Time.sec', all_of(stimChannel)))
+  
+  femgData <- femgData %>% 
+    mutate(StimCode.filled = .[[stimChannel]])
+  
+  for (n in seq_along(starts$Time.sec)) {
+    tofill <- which(
+      femgData$Time.sec > starts$Time.sec[n] & 
+        femgData$Time.sec <= starts$Time.sec[n] + stimDuration
+    )
+    femgData[tofill,'StimCode.filled'] <- starts[n, stimChannel] %>% pull()
+  }
+  
+  femgData
+  
+}
 
 compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, stimFile, fillStimCodes = FALSE) {
   
@@ -141,11 +170,9 @@ compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, sti
     summarise(start = min(Start.sec)) %>% pull(start)
   
   # get time of first stimulus in femg file
-  femgData <- femgData %>% ungroup() %>% 
-    mutate(
-      transition.start = diff_from_prev(.[[stimChannel]]),
-      transition.end = diff_from_next(.[[stimChannel]]),
-    )
+  femgData <- femgData %>% 
+    add_transitions(stimChannel)
+  
   femg.StartTime <- femgData %>% 
     filter(transition.start & .[[stimChannel]] != offCode) %>% 
     summarise(start = min(Time.sec)) %>% pull(start)
@@ -221,10 +248,7 @@ compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, sti
     }
     
     stimFilledData <- stimFilledData %>% 
-      mutate(
-        transition.start = diff_from_prev(StimCode.filled),
-        transition.end = diff_from_next(StimCode.filled),
-      )
+      add_transitions(StimCode.filled)
     
     filledPlot <- ggplot() +
       geom_path(data = filter(stimFilledData, transition.start | transition.end),
@@ -274,37 +298,34 @@ saveWidgetFix <- function (widget,file,...) {
   saveWidget(widget,file=file,...)
 }
 
-label_femg_data <- function(femgData, stimChannel, offCode) {
+add_session_variables <- function(femgData, stimChannel, offCode = 0) {
   
   # is the code different to the previous one? 
-  stimLabelledData <- femgData %>% 
-    mutate(
-      transition.start = diff_from_prev(femgData[[stimChannel]]),
-      transition.end = diff_from_next(femgData[[stimChannel]])
-    )
+  femgData <- femgData %>% 
+    add_transitions(stimChannel)
   # get trial numbers from indices of transition points
-  newTrials <- c(0, which(stimLabelledData$transition.end &
-                            stimLabelledData[[stimChannel]] != offCode))
+  newTrials <- c(0, which(femgData$transition.end &
+                            femgData[[stimChannel]] != offCode))
   
   # fill in all trial numbers 
-  stimLabelledData <- stimLabelledData %>% mutate(trialNo = 0)
+  femgData <- femgData %>% mutate(trialNo = 0)
   for (n in seq_along(newTrials)[-length(newTrials)]) {
-    stimLabelledData <- stimLabelledData %>% 
+    femgData <- femgData %>% 
       mutate(trialNo = replace(trialNo, 
                                (newTrials[n]+1):newTrials[n+1], 
                                values = n))
   }
   
   # add phase info (pre-stim/stim)
-  stimLabelledData <- stimLabelledData %>% 
-    mutate(phase = ifelse(stimLabelledData[[stimChannel]] != offCode, 
+  femgData <- femgData %>% 
+    mutate(phase = ifelse(femgData[[stimChannel]] != offCode, 
                           'stimulus', 'prestim'),
            phase = replace(phase, trialNo == 0, NA))
   
   # time relative to stimulus onset
-  stimLabelledData <- stimLabelledData %>%
+  femgData <- femgData %>%
     group_by(trialNo) %>%
     mutate(stimTime.sec = Time.sec - min(Time.sec[phase!='prestim']))
   
-  return(stimLabelledData %>% ungroup)
+  return(femgData %>% ungroup)
 }

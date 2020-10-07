@@ -95,6 +95,11 @@ labelled.femg.data %>%
 # channel for the full duration of the stimulus
 
 
+labelled.femg.data <- labelled.femg.data %>% 
+  fill_stim_codes('StimCode.corrected', stimDuration = 6)
+
+labelled.femg.data %>% 
+  plot_stim_code_sequence('StimCode.filled') %>% ggplotly()
 
 
 #### check against the expected stimulus sequence ####
@@ -105,10 +110,19 @@ labelled.femg.data %>%
 
 stim.File <- 'example_experiment/0 stim sequences/sub_f_005-emoji.log'
 
+# We use a function which is specific to this experiment, and needs to be 
+# adapted for different experiments.
+
+# here we fill the stim codes based on the log file using fillStimCodes = TRUE
 comparison <- compare_stim_face_emoji_expt(femgData = labelled.femg.data, 
                                            stimChannel = 'StimCode.corrected', 
                                            stimFile = stim.File,
-                                           fillStimCodes = TRUE)
+                                           fillStimCodes = TRUE) 
+
+# alternate call using our pre-filled codes
+# comparison <- compare_stim_face_emoji_expt(femgData = labelled.femg.data, 
+#                                            stimChannel = 'StimCode.filled', 
+#                                            stimFile = stim.File) 
 
 # this produces a list of several objects that help with comparing the 
 # expected and recorded stimulus sequence of the session
@@ -125,4 +139,28 @@ ggplotly(comparison$comparisonPlot)
 print('Stimulus start offsets (seconds):'); print(summary(comparison$startOffsets))
 print('Stimulus end offsets (seconds):'); print(summary(comparison$endOffsets))
 
+
+#### add session variables ####
+# add trial numbers within the session
+# add phase info (pre-stim/stim)
+# add time relative to stimulus onset
+labelled.femg.data <- labelled.femg.data %>% 
+  add_session_variables('StimCode.filled') 
+
+glimpse(labelled.femg.data)
+
+# just choose the variables we want to keep
+out.femg.data <- labelled.femg.data %>% 
+  select(c('Time.sec',
+           'stimTime.sec',
+           'StimCode.filled',
+           'trialNo',
+           'phase',
+           femg.ChannelNames)) 
+
+out.femg.data %>% glimpse()
+
+# save the data file
+out.femg.data %>% 
+  write_csv('sub_005_f_labelled.csv')
 
