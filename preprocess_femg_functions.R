@@ -7,11 +7,11 @@ roll_range <- function(x, ...) roll_max(x, ...) - roll_min(x, ...)
 scale_and_flag <- function(df, prefixes, win.sec, flag.threshold) {
   sample.duration <- diff(df$stimTime.sec[1:2])
   nSamples <- win.sec/sample.duration
-  for (varPF in prefixes) {
-    rawVar <- names(df) %>% str_subset(varPF)
-    name.z <- paste0(varPF,'.z')
+  for (muscleName in prefixes) {
+    rawVar <- names(df) %>% str_subset(muscleName)
+    name.z <- paste0(muscleName,'.z')
     name.zrange <- paste0(name.z,'range')
-    name.flagged <- paste0(varPF, '.flagged')
+    name.flagged <- paste0(muscleName, '.flagged')
     df <- df %>% 
       mutate(!!name.z := scale(.[[rawVar]])[,1]) %>% 
       mutate(!!name.zrange := roll_range(.[[name.z]], n = nSamples, fill = NA)) %>% 
@@ -75,9 +75,9 @@ find_alternate_baseline <- function(df, flagVar, baseline.sec) {
 summarise_flagged_trials <- function(df, prefixes, baseline.sec) {
   output <- list()
   output[['flaggedOnAnyMuscle']] <- c()
-  for (varPF in prefixes) {
+  for (muscleName in prefixes) {
     
-    name.flagged <- paste0(varPF, '.flagged')
+    name.flagged <- paste0(muscleName, '.flagged')
     
     allFlaggedTrials <- df %>% 
       filter(stimTime.sec >= -baseline.sec & .[[name.flagged]]) %>% 
@@ -97,7 +97,7 @@ summarise_flagged_trials <- function(df, prefixes, baseline.sec) {
                              alt.bl.start = NA,
                              alt.bl.end = NA)
     
-    output[[varPF]] <- list('allFlaggedTrials' = allFlaggedTrials,
+    output[[muscleName]] <- list('allFlaggedTrials' = allFlaggedTrials,
                             'baselineOnlyFlaggedTrials' = baselineOnlyFlaggedTrials,
                             'nTrials' = nTrials,
                             'nFlaggedTrials' = nFlaggedTrials,
@@ -109,7 +109,7 @@ summarise_flagged_trials <- function(df, prefixes, baseline.sec) {
       for (baselineTrial in baselineOnlyFlaggedTrials) {
         new.bl <-df %>%
           filter(trialNo == baselineTrial & stimTime.sec < 0) %>%
-          find_alternate_baseline( flagVar = paste(varPF,'flagged', sep = '.'), baseline.sec )
+          find_alternate_baseline( flagVar = paste(muscleName,'flagged', sep = '.'), baseline.sec )
         # save if it found some
         if (length(new.bl) > 0) {
           alt.baselines <- alt.baselines %>%
@@ -123,7 +123,7 @@ summarise_flagged_trials <- function(df, prefixes, baseline.sec) {
     excludeTrials <- setdiff(allFlaggedTrials, baselineRescuedTrials)
     nExcludedTrials <- length(excludeTrials)
     pcExcludedTrials <- 100*nExcludedTrials/nTrials
-    output[[varPF]]<- output[[varPF]] %>% 
+    output[[muscleName]]<- output[[muscleName]] %>% 
       c(list('alt.baselines' = alt.baselines,
              'baselineRescuedTrials' = baselineRescuedTrials,
              'nRescuedTrials' = nRescuedTrials,
@@ -141,15 +141,15 @@ summarise_flagged_trials <- function(df, prefixes, baseline.sec) {
 update_baseline_periods <- function(df, prefixes, trials, baseline.sec) {
   secondsPerSample <- diff(df$Time.sec[1:2])
   default.bl <- c(-baseline.sec, 0 - secondsPerSample) # 1 sample before 0
-  for (varPF in prefixes) {
-    name.bl.start <- paste(varPF,'bl.start', sep = '.')
-    name.bl.end <- paste(varPF,'bl.end', sep = '.')
-    name.z <- paste0(varPF,'.z')
+  for (muscleName in prefixes) {
+    name.bl.start <- paste(muscleName,'bl.start', sep = '.')
+    name.bl.end <- paste(muscleName,'bl.end', sep = '.')
+    name.z <- paste0(muscleName,'.z')
     df <- df %>% mutate(!!name.bl.start:= default.bl[1],
                     !!name.bl.end:= default.bl[2])
     
-    for (b in trials[[varPF]]$baselineRescuedTrials) {
-      alt.bl <- trials[[varPF]]$alt.baselines %>% filter(trialNo == b) %>% unlist()
+    for (b in trials[[muscleName]]$baselineRescuedTrials) {
+      alt.bl <- trials[[muscleName]]$alt.baselines %>% filter(trialNo == b) %>% unlist()
       df <- df %>% 
         mutate(
           !!name.bl.start:= replace(.[[name.bl.start]], b == trialNo, alt.bl[2]),
@@ -208,11 +208,11 @@ plot_flagged_trial <- function(flaggedData, flaggedTrial, prefixes,win.sec,prest
     mutate(muscle = factor(muscle, levels = prefixes))
   
   note = paste0(' trial ',flaggedTrial,'.')
-  for (varPF in prefixes) {
-    note <- paste(note,varPF)
+  for (muscleName in prefixes) {
+    note <- paste(note,muscleName)
     add <- case_when( 
-      flaggedTrial %in% trials[[varPF]]$excludeTrials ~ 'excluded.',
-      flaggedTrial %in% trials[[varPF]]$baselineRescuedTrials ~ 'alternative baseline.',
+      flaggedTrial %in% trials[[muscleName]]$excludeTrials ~ 'excluded.',
+      flaggedTrial %in% trials[[muscleName]]$baselineRescuedTrials ~ 'alternative baseline.',
       TRUE ~ 'included.'
       )
     note <- paste(note, add)
@@ -248,15 +248,15 @@ plot_flagged_trial <- function(flaggedData, flaggedTrial, prefixes,win.sec,prest
          x = 'Time relative to stimulus onset (seconds)', y = 'mV')
 }
 
-preprocess_data <- function(flaggedData,prefixes) {
+finalise_data <- function(flaggedData,prefixes) {
   pp.femg.data <- list()
   
-  for (varPF in prefixes) {
-    var.cols <- str_which(names(flaggedData),varPF)
-    name.z <- paste0(varPF,'.z')
-    name.bl.start <- paste0(varPF,'.bl.start')
-    name.bl.end <- paste0(varPF,'.bl.end')
-    pp.femg.data[[varPF]] <- flaggedData %>% 
+  for (muscleName in prefixes) {
+    var.cols <- str_which(names(flaggedData),muscleName)
+    name.z <- paste0(muscleName,'.z')
+    name.bl.start <- paste0(muscleName,'.bl.start')
+    name.bl.end <- paste0(muscleName,'.bl.end')
+    pp.femg.data[[muscleName]] <- flaggedData %>% 
       select(c(1:5, var.cols)) %>% 
       group_by(trialNo) %>% 
       mutate(phase = replace(phase, 
@@ -264,11 +264,11 @@ preprocess_data <- function(flaggedData,prefixes) {
                                stimTime.sec <= .data[[name.bl.end]], 
                              'baseline'),
              !!name.z := replace(.data[[name.z]],
-                                 trialNo %in% trials[[varPF]]$excludeTrials,
+                                 trialNo %in% trials[[muscleName]]$excludeTrials,
                                  NA)) %>% 
       filter( phase != 'prestim')
     
-    pp.femg.data[[varPF]] %>% 
+    pp.femg.data[[muscleName]] %>% 
       select(-c(name.bl.start,name.bl.end))
   }
   return(pp.femg.data)
@@ -276,14 +276,14 @@ preprocess_data <- function(flaggedData,prefixes) {
 
 means_and_diffs <- function(preprocessedData, prefixes) {
   summaryData <- list()
-  for (varPF in prefixes) {
-    name.z <- paste0(varPF,'.z')
-    name.z.mean <- paste0(varPF,'.z.mean')
-    name.z.mean.baseline <- paste0(varPF,'.z.mean.baseline')
-    name.z.mean.stimulus <- paste0(varPF,'.z.mean.stimulus')
-    name.z.mean.difference <- paste0(varPF,'.z.mean.difference')
+  for (muscleName in prefixes) {
+    name.z <- paste0(muscleName,'.z')
+    name.z.mean <- paste0(muscleName,'.z.mean')
+    name.z.mean.baseline <- paste0(muscleName,'.z.mean.baseline')
+    name.z.mean.stimulus <- paste0(muscleName,'.z.mean.stimulus')
+    name.z.mean.difference <- paste0(muscleName,'.z.mean.difference')
     
-    summaryData[[varPF]] <- preprocessedData[[varPF]] %>% 
+    summaryData[[muscleName]] <- preprocessedData[[muscleName]] %>% 
       group_by(trialNo, StimCode, phase) %>% 
       summarise(!!name.z.mean := mean(.data[[name.z]], na.rm = TRUE)) %>% 
       group_by(trialNo) %>% 
