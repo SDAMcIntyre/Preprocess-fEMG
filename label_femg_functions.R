@@ -3,7 +3,7 @@ library(readxl)
 library(RcppRoll)
 library(htmlwidgets)
 
-read_acq_text <- function(fileName, keepChannels) {
+read_acq_text <- function(fileName, delim, keepChannels) {
   print(paste('Reading file', fileName))
   # extract numbers from 2nd row to get sample duration in ms and convert to sampling rate
   sampRate.Hz <- fileName %>% 
@@ -29,7 +29,8 @@ read_acq_text <- function(fileName, keepChannels) {
     str_which(paste(keepChannels, collapse = '|'))
   
   # read in the data, keep only the wanted channels
-  rawAcqData <- read_csv(fileName,
+  rawAcqData <- read_delim(fileName,
+                           delim = delim,
                          skip = raw.nChannels*2+5, 
                          col_names = FALSE,
                          col_types = cols())[,keepColumns]

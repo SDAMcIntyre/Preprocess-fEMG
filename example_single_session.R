@@ -16,6 +16,7 @@ stim.ChannelName <- 'Marker'
 
 # read the data file
 raw.femg.data <- read_acq_text(fileName = raw.femg.file, 
+                               delim = ',',
                                keepChannels = c(stim.ChannelName, femg.ChannelNames))
 
 # Look at the data, it has only the channels we told it to keep, 
