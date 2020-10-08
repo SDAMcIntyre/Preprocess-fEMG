@@ -26,8 +26,8 @@ In the "Save as type" drop-down, choose "Text (*.txt *.csv)"
 
 ![Save as type](documentation/Readme1_TextType.png?raw=true)
 
-In the export options, tick "Include header" and choose "Delimiter: comma"
+In the export options, tick "Include header" and choose "Delimiter: comma" (tab delimiter is also possible, you specify when calling "read_acq_text()").
 
 ![Export options](documentation/Readme2_ExportOptions.png?raw=true)
 
-Wait for it to export, and place the file in the raw data folder.
+Wait for it to export, and save it somewhere handy.
