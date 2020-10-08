@@ -261,6 +261,15 @@ flagged.femg.data %>%
 # right-most value in the updated baseline is the right-most value
 # of a window that does not exceed the threshold
 
+# save all the flagged trials (you could also do this for every trial)
+# this takes some time, so be patient
+for (t in trials$flaggedOnAnyMuscle) { 
+ thisplot <- flagged.femg.data %>%
+   plot_flagged_trial(flaggedTrial = t, prefixes, win.sec, prestim.sec) %>%
+   ggplotly()
+ filename <- paste0('sub_005_f_',t,'.html')
+ saveWidgetFix(thisplot, filename) 
+}
 
 ##### finalise and save the data ####
 
