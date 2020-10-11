@@ -252,20 +252,40 @@ finalise_data <- function(flaggedData,prefixes) {
   pp.femg.data <- list()
   
   for (muscleName in prefixes) {
+    
+    # names of variables depending on the muscle
     var.cols <- str_which(names(flaggedData),muscleName)
+    name.mV <- paste0(muscleName,'.mV')
     name.z <- paste0(muscleName,'.z')
     name.bl.start <- paste0(muscleName,'.bl.start')
     name.bl.end <- paste0(muscleName,'.bl.end')
+    
     pp.femg.data[[muscleName]] <- flaggedData %>% 
+      # keep only ID variables and outcome variables
       select(c(1:5, var.cols)) %>% 
       group_by(trialNo) %>% 
-      mutate(phase = replace(phase, 
-                             stimTime.sec >= .data[[name.bl.start]] &
-                               stimTime.sec <= .data[[name.bl.end]], 
-                             'baseline'),
-             !!name.z := replace(.data[[name.z]],
-                                 trialNo %in% trials[[muscleName]]$excludeTrials,
-                                 NA)) %>% 
+      mutate(
+        # fix baseline
+        phase = replace(
+          phase,
+          stimTime.sec >= .data[[name.bl.start]] &
+            stimTime.sec <= .data[[name.bl.end]],
+          'baseline'
+          ),
+        # replace mV data from excluded trials with NA
+        !!name.mV := replace(
+          .data[[name.mV]],
+          trialNo %in% trials[[muscleName]]$excludeTrials,
+          NA
+        ),
+        # replace z data from excluded trials with NA
+        !!name.z := replace(
+          .data[[name.z]],
+          trialNo %in% trials[[muscleName]]$excludeTrials,
+          NA
+        )
+      ) %>% 
+      # only keep data from baseline and stimulus phases
       filter( phase != 'prestim')
     
     pp.femg.data[[muscleName]] %>% 
@@ -277,21 +297,38 @@ finalise_data <- function(flaggedData,prefixes) {
 means_and_diffs <- function(preprocessedData, prefixes) {
   summaryData <- list()
   for (muscleName in prefixes) {
+    name.mV <- paste0(muscleName,'.mV')
     name.z <- paste0(muscleName,'.z')
+    name.mV.mean <- paste0(muscleName,'.mV.mean')
     name.z.mean <- paste0(muscleName,'.z.mean')
+    name.mV.mean.baseline <- paste0(muscleName,'.mV.mean.baseline')
     name.z.mean.baseline <- paste0(muscleName,'.z.mean.baseline')
+    name.mV.mean.stimulus <- paste0(muscleName,'.mV.mean.stimulus')
     name.z.mean.stimulus <- paste0(muscleName,'.z.mean.stimulus')
+    name.mV.mean.difference <- paste0(muscleName,'.mV.mean.difference')
     name.z.mean.difference <- paste0(muscleName,'.z.mean.difference')
     
     summaryData[[muscleName]] <- preprocessedData[[muscleName]] %>% 
       group_by(trialNo, StimCode, phase) %>% 
-      summarise(!!name.z.mean := mean(.data[[name.z]], na.rm = TRUE)) %>% 
+      summarise(
+        # calculate means
+        !!name.mV.mean := mean(.data[[name.mV]], na.rm = TRUE),
+        !!name.z.mean := mean(.data[[name.z]], na.rm = TRUE)
+      ) %>% 
       group_by(trialNo) %>% 
-      summarise(StimCode = StimCode[2],
-                !!name.z.mean.baseline := .data[[name.z.mean]][1],
-                !!name.z.mean.stimulus := .data[[name.z.mean]][2]) %>% 
-      mutate(!!name.z.mean.difference := .data[[name.z.mean.stimulus]] - .data[[name.z.mean.baseline]]
-             )
+      summarise(
+        # convert to wide format
+        StimCode = StimCode[2],
+        !!name.mV.mean.baseline := .data[[name.mV.mean]][1],
+        !!name.z.mean.baseline := .data[[name.z.mean]][1],
+        !!name.mV.mean.stimulus := .data[[name.mV.mean]][2],
+        !!name.z.mean.stimulus := .data[[name.z.mean]][2]
+        ) %>% 
+  mutate(
+    # calculate differences
+    !!name.mV.mean.difference := .data[[name.mV.mean.stimulus]] - .data[[name.mV.mean.baseline]],
+    !!name.z.mean.difference := .data[[name.z.mean.stimulus]] - .data[[name.z.mean.baseline]]
+    )
   }
   summaryData
 }
