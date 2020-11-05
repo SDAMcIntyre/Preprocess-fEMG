@@ -31,7 +31,7 @@ glimpse(raw.femg.data)
 
 femg.stimCodes <- c(111:118, 121:128, 131:138, 141:148, 151:158, 
                     161:168, 171:178, 11:18, 21:28, 31:38, 41:48, 
-                    51:58,  61:68,  71:78, 224, 0)
+                    51:58,  61:68,  71:78, 224)
 
 # Look for errors in the marker channel and try to fix them
 

@@ -111,7 +111,7 @@ clean_acq_stim_codes <- function(femgData, stimChannel, usedStimCodes, knownNois
                                    StimCode.corrected %in% knownNoiseCodes, # condition
                                    offCode), # replace with
       # is the stim code an unexpected one?
-      unexpected = StimCode.corrected %in% usedStimCodes == FALSE
+      unexpected = StimCode.corrected %in%  c(offCode, usedStimCodes) == FALSE
     )
   return(stimCodedData)
 }  
