@@ -12,11 +12,21 @@ scale_and_flag <- function(df, prefixes, win.sec, flag.threshold) {
     name.z <- paste0(muscleName,'.z')
     name.zrange <- paste0(name.z,'range')
     name.flagged <- paste0(muscleName, '.flagged')
+    name.rawfixed <- paste0(muscleName, '.fixed')
+    name.zfixed <- paste0(muscleName, '.zfixed')
     df <- df %>% 
       mutate(!!name.z := scale(.[[rawVar]])[,1]) %>% 
       mutate(!!name.zrange := roll_range(.[[name.z]], n = nSamples, fill = NA)) %>% 
       mutate(!!name.flagged := abs(.[[name.zrange]]) > flag.threshold)
-      mutate(!!name.flagged := replace_na(.[[name.flagged]], FALSE))
+      mutate(!!name.flagged := replace_na(.[[name.flagged]], FALSE)) %>% 
+        
+        mutate(!!name.rawfixed := if_else(.[[name.flagged]], 
+                                          as.numeric(NA), 
+                                          .[[rawVar]])) %>% 
+        
+        mutate(!!name.zfixed := if_else(.[[name.flagged]], 
+                                        as.numeric(NA), 
+                                        .[[name.z]]))
   }
   return(df)
 }
