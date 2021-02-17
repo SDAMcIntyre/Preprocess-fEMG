@@ -16,6 +16,7 @@ scale_and_flag <- function(df, prefixes, win.sec, flag.threshold) {
       mutate(!!name.z := scale(.[[rawVar]])[,1]) %>% 
       mutate(!!name.zrange := roll_range(.[[name.z]], n = nSamples, fill = NA)) %>% 
       mutate(!!name.flagged := abs(.[[name.zrange]]) > flag.threshold)
+      mutate(!!name.flagged := replace_na(.[[name.flagged]], FALSE))
   }
   return(df)
 }
