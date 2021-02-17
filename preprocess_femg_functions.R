@@ -31,6 +31,41 @@ scale_and_flag <- function(df, prefixes, win.sec, flag.threshold) {
   return(df)
 }
 
+clean_bins <- function(df, prefixes, pfkeep = 0.5) {
+  for (muscleName in prefixes) {
+    name.flagged <- paste0(muscleName, '.flagged')
+    name.rawfixed <- paste0(muscleName, '.fixed')
+    name.zfixed <- paste0(muscleName, '.zfixed')
+    df <- df %>% 
+      mutate(!!name.rawfixed := if_else(.[[name.flagged]] > pfkeep, 
+                                        as.numeric(NA), 
+                                        .[[name.rawfixed]])) %>% 
+      mutate(!!name.zfixed := if_else(.[[name.flagged]] > pfkeep, 
+                                      as.numeric(NA), 
+                                      .[[name.zfixed]]))
+  }
+  return(df)
+}
+
+apply_bins <- function(df, prefixes, bin.sec = 0.1, pfkeep = 0) {
+  df %>% 
+    mutate(
+      bin.n = cut(stimTime.sec, 
+                  breaks = seq(min(stimTime.sec), max(stimTime.sec), by = bin.sec), 
+                  labels = FALSE),
+      binTime.sec = bin.n * bin.sec + min(stimTime.sec) 
+    ) %>% 
+    # BOOKMARK
+    group_by(session,cued,trial,time) %>% 
+    summarise(
+      across(.cols = starts_with(prefixes), 
+             .fns = ~mean(., na.rm = TRUE))
+    ) %>% 
+    ungroup() %>% 
+    do(clean_bins(., prefixes, pfkeep)) 
+}
+
+
 plot_histograms <-function(flaggedData, prefixes) {
   histData <- flaggedData %>%
     pivot_longer( cols = matches( to_regex(prefixes) ),
