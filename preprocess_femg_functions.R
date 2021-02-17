@@ -55,14 +55,29 @@ apply_bins <- function(df, prefixes, bin.sec = 0.1, pfkeep = 0) {
                   labels = FALSE),
       binTime.sec = bin.n * bin.sec + min(stimTime.sec) 
     ) %>% 
-    # BOOKMARK
-    group_by(session,cued,trial,time) %>% 
+    group_by(StimCode,trial,binTime.sec) %>% 
     summarise(
       across(.cols = starts_with(prefixes), 
              .fns = ~mean(., na.rm = TRUE))
     ) %>% 
     ungroup() %>% 
     do(clean_bins(., prefixes, pfkeep)) 
+}
+
+myboot <- function(x) { mean_cl_boot(x, B=10000) }
+
+time_plot <- function(df, muscle) {
+  
+  df %>% 
+    ggplot(aes(x = binTime.sec, y = {{muscle}}, 
+               colour = cued, fill = cued, linetype = cued, shape = cued)) +
+    geom_vline(xintercept = 0) +
+    stat_summary(fun.data = 'myboot', geom = 'ribbon', alpha = 0.3) +
+    stat_summary(fun = 'mean', geom = 'line') +
+    stat_summary(fun = 'mean', geom = 'point') +
+    scale_x_continuous(breaks = seq(0,max(df$binTime.sec),1)) +
+    theme_bw() +
+    labs(x = 'Time (seconds)', y = 'Muscle Activity (z)')
 }
 
 
