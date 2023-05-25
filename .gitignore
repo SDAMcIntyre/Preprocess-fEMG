@@ -7,3 +7,6 @@ PIK_01*
 
 # Mac OS system file
 .DS_Store
+
+# data file
+*OASIS*
