@@ -4,3 +4,6 @@
 .Ruserdata
 *E111 post IAPS*
 PIK_01*
+
+# Mac OS system file
+.DS_Store

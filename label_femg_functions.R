@@ -5,23 +5,23 @@ library(htmlwidgets)
 
 read_acq_text <- function(fileName, delim, keepChannels) {
   print(paste('Reading file', fileName))
-  # extract numbers from 2nd row to get sample duration in ms and convert to sampling rate
+  # extract numbers from 4th row to get sample duration in ms and convert to sampling rate
   sampRate.Hz <- fileName %>% 
-    read_lines(skip = 1, n_max = 1) %>% 
+    read_lines(skip = 3, n_max = 1) %>% 
     str_extract('[0-9]+') %>% 
     as.numeric() %>% 
     ( function(x) (1 / (x / 1000)) )
   
-  # extract numbers from 3rd row to get number of channels in file
+  # extract numbers from 5th row to get number of channels in file
   raw.nChannels <- read_lines(fileName,
-                              skip = 2, n_max = 1) %>%
+                              skip = 4, n_max = 1) %>%
     str_extract('[0-9]+') %>% 
     as.numeric()
   
   # read channel names 
   # just get the odd ones for the names (even rows are measurement units)
   raw.ChannelNames <- read_lines(fileName,
-                                 skip = 3, 
+                                 skip = 5, 
                                  n_max = 2*raw.nChannels)[seq(1,raw.nChannels*2, 2)]
   
   # get the column numbers for the data and stimulus channels by matching the names
@@ -31,7 +31,7 @@ read_acq_text <- function(fileName, delim, keepChannels) {
   # read in the data, keep only the wanted channels
   rawAcqData <- read_delim(fileName,
                            delim = delim,
-                         skip = raw.nChannels*2+5, 
+                         skip = raw.nChannels*2+7, 
                          col_names = FALSE,
                          col_types = cols())[,keepColumns]
   # put the names back

@@ -6,17 +6,16 @@ library(plotly)
 #### read in the raw data ####
 
 # For this demo, we are looking at a recording from a single session
-raw.femg.file <- 'example_experiment/1 raw data/sub_005_f.txt'
+raw.femg.file <- "FB_010_OASIS_exp..txt" #'example_experiment/1 raw data/sub_005_f.txt'
 
 # Provide the channels in the raw data file that we are interested in
-femg.ChannelNames <- c('Corr Processed',
-                       'Zyg Processed',
-                       'Lev Processed')
+femg.ChannelNames <- c('CORR Processed',
+                       'ZYG Processed')
 stim.ChannelName <- 'Marker'
 
 # read the data file
 raw.femg.data <- read_acq_text(fileName = raw.femg.file, 
-                               delim = ',',
+                               delim = '\t',
                                keepChannels = c(stim.ChannelName, femg.ChannelNames))
 
 # Look at the data, it has only the channels we told it to keep, 
@@ -26,12 +25,11 @@ glimpse(raw.femg.data)
 
 ##### clean up the stimulus codes ####
 
+
 # voltages on the stimulus/marker channel that indicate 
 # what the stimulus was, chosen by the experimenter:
 
-femg.stimCodes <- c(111:118, 121:128, 131:138, 141:148, 151:158, 
-                    161:168, 171:178, 11:18, 21:28, 31:38, 41:48, 
-                    51:58,  61:68,  71:78, 224)
+femg.stimCodes <- c(31:36,41:46,51:56,61:66,71:76,81:86)
 
 # Look for errors in the marker channel and try to fix them
 
@@ -54,7 +52,7 @@ glimpse(labelled.femg.data)
 labelled.femg.data %>% 
   filter(unexpected) %>% 
   group_by(StimCode.corrected) %>% 
-  tally()
+  tally() #%>% View()
 
 # An uexpected voltage of 1 appears  896 times and the function
 # didn't catch it. Plot the channel so we can see what's going on:
