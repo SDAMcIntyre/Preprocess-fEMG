@@ -2,5 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# Mac OS system files
+*.DS_Store
+
+# data files
 *E111 post IAPS*
 PIK_01*
+*OASIS*
