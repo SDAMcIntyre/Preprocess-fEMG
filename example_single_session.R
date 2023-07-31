@@ -6,7 +6,7 @@ library(plotly)
 #### read in the raw data ####
 
 # For this demo, we are looking at a recording from a single session
-raw.femg.file <- "FB_010_OASIS_exp..txt" #'example_experiment/1 raw data/sub_005_f.txt'
+raw.femg.file <- "C:/Users/hilen74/OneDrive - Linköpings universitet/Biofeedback study (Maria)/fEMG analysis/R - EMG Project w Sarah McIntyre/GitHub/Preprocess-fEMG/example_experiment/1 raw data/FB_010_OASIS_exp.txt" #'example_experiment/1 raw data/sub_005_ f.txt'
 
 # Provide the channels in the raw data file that we are interested in
 femg.ChannelNames <- c('CORR Processed',
@@ -54,8 +54,9 @@ labelled.femg.data %>%
   group_by(StimCode.corrected) %>% 
   tally() #%>% View()
 
-# An uexpected voltage of 1 appears  896 times and the function
-# didn't catch it. Plot the channel so we can see what's going on:
+# An uexpected voltage of 1 appears  896 times and the function 
+# didn't catch it. (#This does not seem to apply for the biofeedback stuff though) 
+#Plot the channel so we can see what's going on:
 
 labelled.femg.data %>% 
   plot_stim_code_sequence('StimCode.corrected') %>% 
@@ -94,13 +95,14 @@ labelled.femg.data %>%
 # the whole time the stimulus is switched on. We know that the 
 # stimulus lasts 6 seconds so we "fill" the stimCode.corrected
 # channel for the full duration of the stimulus
+# this shouldn't be needed for the biofeedback experiment, 
+# as there are already 6 seconds marked for the stimulus
 
+#labelled.femg.data <- labelled.femg.data %>% 
+ # fill_stim_codes('StimCode.corrected', stimDuration = 6)
 
-labelled.femg.data <- labelled.femg.data %>% 
-  fill_stim_codes('StimCode.corrected', stimDuration = 6)
-
-labelled.femg.data %>% 
-  plot_stim_code_sequence('StimCode.filled') %>% ggplotly()
+#labelled.femg.data %>% 
+ # plot_stim_code_sequence('StimCode.filled') %>% ggplotly()
 
 
 ##### check against the expected stimulus sequence ####
@@ -109,7 +111,7 @@ labelled.femg.data %>%
 # software, we can check that the sequences of stimuli match
 # we have a logfile from Presentation
 
-stim.File <- 'example_experiment/0 stim sequences/sub_f_005-emoji.log'
+stim.File <- 'C:/Users/hilen74/OneDrive - Linköpings universitet/Biofeedback study (Maria)/fEMG analysis/R - EMG Project w Sarah McIntyre/GitHub/Preprocess-fEMG/example_experiment/0 stim sequences/FB_010-OASIS Scenario SET 2 (Swedish).log'
 
 # We use a function which is specific to this experiment, and needs to be 
 # adapted for different experiments.
