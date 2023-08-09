@@ -1,5 +1,8 @@
 #### PART 1 ####
 
+#Set the current working directory to where you have the scripts.
+setwd("C:/Users/hilen74/OneDrive - Linköpings universitet/Biofeedback study (Maria)/fEMG analysis/R - EMG Project w Sarah McIntyre/GitHub/Preprocess-fEMG/")
+
 source('label_femg_functions.R')
 library(plotly)
 
