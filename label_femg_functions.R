@@ -157,15 +157,24 @@ fill_stim_codes <- function(femgData, stimChannel, stimDuration) {
 compare_stim_face_emoji_expt <- function(femgData, stimChannel, offCode = 0, stimFile, fillStimCodes = FALSE) {
   
   # read in stim file
+ #this would probably work if you had normal decimals, but we don't.
+  #stimData <- suppressWarnings(
+   # read_tsv(stimFile, skip = 3, col_types = '__c_n__d__d_____')) %>%
+    #rename('StimCode' = `Pic(num)`) %>% 
+    #mutate(Start.sec = Time/10000,
+     #      Duration.sec = Duration/10000,
+      #     End.sec = Start.sec + Duration.sec ) %>% 
+    #filter(`Event Type` == 'Picture' & !is.na(StimCode) & StimCode != offCode) 
+
+  #Instead we'll use the following to read in the stim file. This transfers the pic(num) values from hexadecimals to decimals when creating the StimCode variable.
   stimData <- suppressWarnings(
-    read_tsv(stimFile, skip = 3, col_types = '__c_n__d__d_____')
-               ) %>%
-    rename('StimCode' = `Pic(num)`) %>% 
-    mutate(Start.sec = Time/10000,
+    read_tsv(stim.File, skip = 2)) %>% #when finished, it should be stimFile instead of stim.File
+    mutate('StimCode' = strtoi(`Pic(num)`, base=16),
+           Start.sec = Time/10000, #not sure why we have to divide by 10 000 rather than 1000 but that seems to be the right way to go. 
            Duration.sec = Duration/10000,
            End.sec = Start.sec + Duration.sec ) %>% 
-    filter(`Event Type` == 'Picture' & !is.na(StimCode) & StimCode != offCode) 
-
+    filter(`Event Type` == 'Picture' & !is.na(StimCode) & StimCode != 0) #this should be offCode instead of 0 when finished. 
+  
   # get time of first stimulus in stimulus file
   stim.StartTime <- stimData %>% filter(StimCode != offCode) %>% 
     summarise(start = min(Start.sec)) %>% pull(start)
