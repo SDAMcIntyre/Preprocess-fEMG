@@ -173,7 +173,7 @@ out.femg.data %>% glimpse()
 
 # save the data file
 out.femg.data %>% 
-  write_csv('sub_005_f_labelled.csv')
+  write_csv('FB_010_OASIS_exp_labelled.csv') 
 
 
 
