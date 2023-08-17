@@ -211,3 +211,63 @@ stimData <- suppressWarnings(
          
          View(stimDataNew4)
          
+         
+         
+         ###### #####temporary try to get the length of the prestim periods (by HE) #####
+         out.femg.data %>%
+           
+           library(dplyr)
+         
+         # Assuming your data is named 'out.femg.data'
+         prestim_time <- out.femg.data %>%
+           group_by(trialNo) %>%
+           summarise(min_stimTime = min(stimTime.sec))
+         
+         # Print the prestim_times
+         print(prestim_time)
+         
+         #summarize the prestim time
+         prestim_time_sum <- prestim_time %>%
+           summarise(mean_prestimTime = mean(min_stimTime),
+                     median_prestimTime = median(min_stimTime),
+                     sd_prestimTime = sd(min_stimTime),
+                     min_prestimTime = min(min_stimTime),
+                     max_prestimTime = max(min_stimTime))
+         
+         # Print the summary statistics
+         print(prestim_time_sum)
+         
+         prestim_time <- out.femg.data %>%
+           group_by(trialNo) %>%
+           summarise(min_stimTime = min(stimTime.sec, na.rm = TRUE)) %>%
+           filter(!is.na(min_stimTime))
+         
+         # Calculate summary statistics
+         prestim_time_sum <- prestim_time %>%
+           summarise(mean_prestimTime = mean(min_stimTime),
+                     median_prestimTime = median(min_stimTime),
+                     sd_prestimTime = sd(min_stimTime),
+                     min_prestimTime = min(min_stimTime),
+                     max_prestimTime = max(min_stimTime))
+         
+         # Print the summary statistics
+         print(prestim_time_sum)
+         
+         #Another try with the help of chatgpt
+         prestim_time <- out.femg.data %>%
+           group_by(trialNo) %>%
+           summarise(min_stimTime = min(stimTime.sec, na.rm = TRUE)) %>%
+           filter(!is.na(min_stimTime) & !is.infinite(min_stimTime))
+         
+         # Calculate summary statistics
+         prestim_time_sum <- prestim_time %>%
+           summarise(mean_prestimTime = mean(min_stimTime),
+                     median_prestimTime = median(min_stimTime),
+                     sd_prestimTime = sd(min_stimTime),
+                     min_prestimTime = min(min_stimTime),
+                     max_prestimTime = max(min_stimTime))
+         
+         # Print the summary statistics
+         print(prestim_time_sum)
+         
+         
