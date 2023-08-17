@@ -3,6 +3,7 @@ library(readxl)
 library(RcppRoll)
 library(htmlwidgets)
 
+
 read_acq_text <- function(fileName, delim, keepChannels) {
   print(paste('Reading file', fileName))
   # extract numbers from 4th row to get sample duration in ms and convert to sampling rate
