@@ -1,7 +1,8 @@
 #### PART 1 ####
 
+
 #Set the current working directory to where you have the scripts.
-setwd("C:/Users/hilen74/OneDrive - Linköpings universitet/Biofeedback study (Maria)/fEMG analysis/R - EMG Project w Sarah McIntyre/GitHub/Preprocess-fEMG/")
+setwd("C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/")
 
 source('label_femg_functions.R')
 library(plotly)
@@ -9,7 +10,7 @@ library(plotly)
 #### read in the raw data ####
 
 # For this demo, we are looking at a recording from a single session
-raw.femg.file <- "C:/Users/hilen74/OneDrive - Linköpings universitet/Biofeedback study (Maria)/fEMG analysis/R - EMG Project w Sarah McIntyre/GitHub/Preprocess-fEMG/example_experiment/1 raw data/FB_010_OASIS_exp.txt" #'example_experiment/1 raw data/sub_005_ f.txt'
+raw.femg.file <- "C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/example_experiment/1 raw data/FB_010_OASIS_exp..txt" ##'example_experiment/1 raw data/sub_005_ f.txt'
 
 # Provide the channels in the raw data file that we are interested in
 femg.ChannelNames <- c('CORR Processed',
@@ -114,7 +115,7 @@ labelled.femg.data %>%
 # software, we can check that the sequences of stimuli match
 # we have a logfile from Presentation
 
-stim.File <- 'C:/Users/hilen74/OneDrive - Linköpings universitet/Biofeedback study (Maria)/fEMG analysis/R - EMG Project w Sarah McIntyre/GitHub/Preprocess-fEMG/example_experiment/0 stim sequences/FB_010-OASIS Scenario SET 2 (Swedish).log'
+stim.File <- 'C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/example_experiment/0 stim sequences/FB_010-OASIS Scenario SET 2 (Swedish).log'
 
 # We use a function which is specific to this experiment, and needs to be 
 # adapted for different experiments.
