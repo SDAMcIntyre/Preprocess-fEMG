@@ -6,17 +6,16 @@ library(plotly)
 #### read in the raw data ####
 
 # For this demo, we are looking at a recording from a single session
-raw.femg.file <- 'example_experiment/1 raw data/sub_005_f.txt'
+raw.femg.file <- "C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/example_experiment/1 raw data/FB_010_OASIS_exp..txt" ##'example_experiment/1 raw data/sub_005_ f.txt'
 
 # Provide the channels in the raw data file that we are interested in
-femg.ChannelNames <- c('Corr Processed',
-                       'Zyg Processed',
-                       'Lev Processed')
+femg.ChannelNames <- c('CORR Processed',
+                       'ZYG Processed')
 stim.ChannelName <- 'Marker'
 
 # read the data file
 raw.femg.data <- read_acq_text(fileName = raw.femg.file, 
-                               delim = ',',
+                               delim = '\t',
                                keepChannels = c(stim.ChannelName, femg.ChannelNames))
 
 # Look at the data, it has only the channels we told it to keep, 
@@ -29,9 +28,8 @@ glimpse(raw.femg.data)
 # voltages on the stimulus/marker channel that indicate 
 # what the stimulus was, chosen by the experimenter:
 
-femg.stimCodes <- c(111:118, 121:128, 131:138, 141:148, 151:158, 
-                    161:168, 171:178, 11:18, 21:28, 31:38, 41:48, 
-                    51:58,  61:68,  71:78, 224)
+femg.stimCodes <- c(31:36,41:46,51:56,61:66,71:76,81:86)
+
 
 # Look for errors in the marker channel and try to fix them
 
@@ -111,7 +109,7 @@ labelled.femg.data %>%
 # software, we can check that the sequences of stimuli match
 # we have a logfile from Presentation
 
-stim.File <- 'example_experiment/0 stim sequences/sub_f_005-emoji.log'
+stim.File <- 'C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/example_experiment/0 stim sequences/FB_010-OASIS Scenario SET 2 (Swedish).log'
 
 # We use a function which is specific to this experiment, and needs to be 
 # adapted for different experiments.
@@ -185,14 +183,13 @@ source('preprocess_femg_functions.R')
 # emotion perception ability’, PLoS ONE, 9(1). doi: 10.1371/journal.pone.0084053.
 
 # read in the file we created in part 1
-labelled.data.file <- 'sub_005_f_labelled.csv' 
+labelled.data.file <- 'FB_010_OASIS_exp_labelled.csv' 
 labelled.femg.data <- read_csv(labelled.data.file, col_types = cols()) %>% 
-  rename('Zyg.mV' = `Zyg Processed`,
-         'Cor.mV' = `Corr Processed`,
-         'Lev.mV' = `Lev Processed`,
+  rename('Zyg.mV' = `ZYG Processed`,
+         'Cor.mV' = `CORR Processed`,
          'StimCode' = 'StimCode.filled')
 
-prefixes <- c('Zyg', 'Cor', 'Lev')
+prefixes <- c('Zyg', 'Cor')
 
 ##### parameters for automatic artifact rejection ####
 
@@ -203,7 +200,7 @@ prefixes <- c('Zyg', 'Cor', 'Lev')
 baseline.sec <- 0.2 
 
 # if the baseline includes artifacts, look for nearby baselines within this window
-prestim.sec <- 1.0 
+prestim.sec <- 2.5 
 
 # how much of the stimulus period do you want to look at?
 stimulus.sec <- 1.0
