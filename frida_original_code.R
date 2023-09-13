@@ -68,18 +68,18 @@ labelled.femg.data %>%
 # run the clean-up again, this time telling it to set 1s to 0s 
 # by adding the parameter knownNoiseCodes = c(1)
 # you can add as many as you like if you find more, e.g. c(1,4,254)
-
-labelled.femg.data <- clean_acq_stim_codes(femgData = raw.femg.data,
-                                           stimChannel = stim.ChannelName,
-                                           usedStimCodes = femg.stimCodes,
-                                           knownNoiseCodes = c(1)) 
-
+# 
+# labelled.femg.data <- clean_acq_stim_codes(femgData = raw.femg.data,
+#                                            stimChannel = stim.ChannelName,
+#                                            usedStimCodes = femg.stimCodes,
+#                                            knownNoiseCodes = c(1)) 
+# 
 # check again for unexpected stim codes
 
-labelled.femg.data %>% 
-  filter(unexpected) %>% 
-  group_by(StimCode.corrected) %>% 
-  tally()
+# labelled.femg.data %>% 
+#   filter(unexpected) %>% 
+#   group_by(StimCode.corrected) %>% 
+#   tally()
 
 # now there are no unexpected values on the marker channel
 
@@ -96,11 +96,11 @@ labelled.femg.data %>%
 # channel for the full duration of the stimulus
 
 
-labelled.femg.data <- labelled.femg.data %>% 
-  fill_stim_codes('StimCode.corrected', stimDuration = 6)
+#labelled.femg.data <- labelled.femg.data %>% 
+#  fill_stim_codes('StimCode.corrected', stimDuration = 6)
 
-labelled.femg.data %>% 
-  plot_stim_code_sequence('StimCode.filled') %>% ggplotly()
+#labelled.femg.data %>% 
+#  plot_stim_code_sequence('StimCode.filled') %>% ggplotly()
 
 
 ##### check against the expected stimulus sequence ####
@@ -250,7 +250,7 @@ flagged.femg.data <- flagged.femg.data %>%
 
 # plot one of them
 flagged.femg.data %>% 
-  plot_flagged_trial(flaggedTrial = 98, prefixes, win.sec, prestim.sec)
+  plot_flagged_trial(flaggedTrial = 23, prefixes, win.sec, prestim.sec)
 
 # it looks like the new baseline includes artifact, but this is because
 # the shaded area flagged as artifact highlights any data point where
