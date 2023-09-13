@@ -18,8 +18,8 @@ scale_and_flag <- function(df, prefixes, win.sec, flag.threshold) {
     df <- df %>% 
       mutate(!!name.z := scale(.[[rawVar]])[,1]) %>% 
       mutate(!!name.zrange := roll_range(.[[name.z]], n = nSamples, fill = NA)) %>% 
-      mutate(!!name.flagged := abs(.[[name.zrange]]) > flag.threshold,
-             !!name.flagged := replace_na(.[[name.flagged]], FALSE)) %>% 
+      mutate(!!name.flagged := abs(.[[name.zrange]]) > flag.threshold) %>% 
+      mutate(!!name.flagged := replace_na(.[[name.flagged]], FALSE)) %>% 
         
         mutate(!!name.rawfixed := if_else(.[[name.flagged]], 
                                           as.numeric(NA), 
