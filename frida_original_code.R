@@ -6,7 +6,7 @@ library(plotly)
 #### read in the raw data ####
 
 # For this demo, we are looking at a recording from a single session
-raw.femg.file <- "C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/example_experiment/1 raw data/FB_010_OASIS_exp..txt" ##'example_experiment/1 raw data/sub_005_ f.txt'
+raw.femg.file <- "C:/Users/frila36/OneDrive - Linköpings universitet/NF BF/Biofeedback fEMG/GitHub/Preprocess-fEMG/example_experiment/1 raw data/FB_010_OASIS_exp..txt" ##'example_experiment/1 raw data/FB_010_OASIS_exp..txt'
 
 # Provide the channels in the raw data file that we are interested in
 femg.ChannelNames <- c('CORR Processed',
@@ -168,7 +168,7 @@ out.femg.data %>% glimpse()
 
 # save the data file
 out.femg.data %>% 
-  write_csv('sub_005_f_labelled.csv')
+  write_csv('FB_010_OASIS_exp._labelled.csv')
 
 
 
@@ -183,7 +183,7 @@ source('preprocess_femg_functions.R')
 # emotion perception ability’, PLoS ONE, 9(1). doi: 10.1371/journal.pone.0084053.
 
 # read in the file we created in part 1
-labelled.data.file <- 'FB_010_OASIS_exp_labelled.csv' 
+labelled.data.file <- 'FB_010_OASIS_exp._labelled.csv' 
 labelled.femg.data <- read_csv(labelled.data.file, col_types = cols()) %>% 
   rename('Zyg.mV' = `ZYG Processed`,
          'Cor.mV' = `CORR Processed`,
@@ -264,7 +264,7 @@ for (t in trials$flaggedOnAnyMuscle) {
  thisplot <- flagged.femg.data %>%
    plot_flagged_trial(flaggedTrial = t, prefixes, win.sec, prestim.sec) %>%
    ggplotly()
- filename <- paste0('sub_005_f_',t,'.html')
+ filename <- paste0('FB_010_OASIS_exp._',t,'.html')
  saveWidgetFix(thisplot, filename) 
 }
 
@@ -280,7 +280,7 @@ pp.femg.data <- flagged.femg.data %>%
 # phases are kept
 for (muscle in prefixes) {
   pp.femg.data[[muscle]] %>% 
-    write_csv(paste0('sub_005_f_',muscle,'_preprocessed.csv'))
+    write_csv(paste0('FB_010_OASIS_exp._',muscle,'_preprocessed.csv'))
 }
 
 # calculate means and differences (stim - baseline)
@@ -291,6 +291,6 @@ summarised.femg.data <- pp.femg.data %>%
 # each row is one trial, excluded trials show NaN
 for (muscle in prefixes) {
   summarised.femg.data[[muscle]] %>% 
-    write_csv(paste0('sub_005_f_',muscle,'_means.csv'))
+    write_csv(paste0('FB_010_OASIS_exp._',muscle,'_means.csv'))
 }
 
